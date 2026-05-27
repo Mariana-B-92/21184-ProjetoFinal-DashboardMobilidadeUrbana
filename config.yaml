@@ -1,0 +1,51 @@
+# =============================================================================
+# Ficheiro de configuração do projeto
+# Dashboard Interativo para Análise de Dados de Mobilidade Urbana
+# =============================================================================
+
+# Caminhos para os dados
+paths:
+  raw_data: "data/raw"
+  processed_data: "data/processed"
+  reports: "data/reports"
+  database: "data/processed/mobilidade.db"
+
+# Ficheiros de entrada
+input_files:
+  gira_csv:
+    - "GIRA_dados_historicos_S1_2022.csv"
+    - "GIRA_dados_historicos_S2_2022.csv"
+  metro_geojson: "estacoes_metro.geojson"
+  rede_ciclavel_geojson: "rede_ciclavel.geojson"
+
+# Sistemas de coordenadas
+crs:
+  geographic: "EPSG:4326"      # WGS84 (entrada e dashboard)
+  projected: "EPSG:3763"       # PT-TM06/ETRS89 (operações métricas)
+
+# Configuração de leitura do GIRA
+gira:
+  encoding: "cp1252"           # Encoding do CSV (não é UTF-8)
+  timezone: "Europe/Lisbon"    # Timezone local para conversão dos timestamps UTC
+  estado_validos: ["active"]   # Estados a manter no histórico
+
+# Parâmetros dos indicadores
+indicators:
+  # Raio de influência (em metros) para análises espaciais
+  raio_influencia: 500
+
+  # Truncagem da distância no cálculo do IIC (em metros)
+  distancia_maxima: 1000
+
+  # Pesos do Índice de Intermodalidade Composto (somam 1)
+  iic_pesos:
+    proximidade: 0.40
+    densidade_gira: 0.35
+    rede_ciclavel: 0.25
+
+# Filtros aplicados durante a integração
+filters:
+  # Estados de rede ciclável a considerar (campo SITUACAO)
+  rede_ciclavel_situacao: ["Executado"]
+  # Estados de estações de metro a considerar (campo SITUACAO)
+  metro_situacao: ["Linha existente"]

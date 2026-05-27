@@ -1,31 +1,26 @@
-"""
-Módulo de carregamento da configuração do projeto.
+# Manipulação de dados
+pandas>=2.0.0
+numpy>=1.24.0
 
-A configuração é definida no ficheiro config.yaml na raiz do projeto.
-Este módulo fornece uma forma centralizada de aceder a esses parâmetros
-em qualquer parte do código.
-"""
+# Dados geoespaciais
+geopandas>=0.14.0
+shapely>=2.0.0
+pyproj>=3.6.0
 
-from pathlib import Path
-import yaml
+# Persistência
+# sqlite3 é parte da stdlib do Python
 
+# Dashboard (Fase 4)
+dash>=2.14.0
+dash-leaflet>=1.0.0
+plotly>=5.18.0
 
-# Caminho para a raiz do projeto (dois níveis acima deste ficheiro)
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
-CONFIG_PATH = PROJECT_ROOT / "config.yaml"
+# Configuração
+pyyaml>=6.0
 
+# Notebooks (exploração)
+jupyter>=1.0.0
+ipykernel>=6.25.0
 
-def load_config() -> dict:
-    """Carrega e retorna a configuração do projeto a partir de config.yaml."""
-    with open(CONFIG_PATH, "r", encoding="utf-8") as f:
-        config = yaml.safe_load(f)
-
-    # Resolver caminhos relativos para absolutos a partir da raiz do projeto
-    for key, value in config["paths"].items():
-        config["paths"][key] = str(PROJECT_ROOT / value)
-
-    return config
-
-
-# Configuração carregada uma vez no momento da importação
-CONFIG = load_config()
+# Testes (opcional)
+pytest>=7.4.0

@@ -1,89 +1,63 @@
 # Dashboard Interativo para Análise de Dados de Mobilidade Urbana
 
-Projeto de Engenharia Informática — Universidade Aberta
+Protótipo de dashboard web para análise da intermodalidade bicicleta–metro no
+município de Lisboa, a partir de dados abertos da plataforma *Lisboa Aberta*
+(histórico GIRA, rede ciclável e estações de metro).
 
-**Autores:** Ana Filipa Oliveira (2200079), Mariana Barrote (2200640)
-**Orientador:** Prof. Doutor Paulo Pombinho
+## Arquitetura
 
----
+O projeto segue uma arquitetura em três camadas (ver secção 2.2 do relatório):
 
-## Sobre o projeto
+| Camada | Pasta | Responsabilidade |
+|--------|-------|------------------|
+| Dados | `data/` | Fontes originais e modelo integrado (SQLite) |
+| Processamento | `etl/`, `kpis/` | Pipeline de ETL (5 etapas) e cálculo de indicadores — executados *offline* |
+| Apresentação | `app/` | Dashboard Dash (consome dados já processados) |
 
-Dashboard web interativo para análise da intermodalidade bicicleta–metro
-no município de Lisboa. Integra dados abertos do portal *Lisboa Aberta*
-(sistema GIRA, rede ciclável, estações de metro) e calcula indicadores
-de micromobilidade e intermodalidade, incluindo um Índice de Intermodalidade
-Composto (IIC).
-
-## Estrutura do projeto
+## Estrutura de pastas
 
 ```
-.
-├── config.yaml         # Parâmetros configuráveis (pesos, raios, caminhos)
-├── data/               # Dados (não versionados)
-│   ├── raw/            # Datasets originais do Lisboa Aberta
-│   ├── processed/      # Outputs do ETL (SQLite)
-│   └── reports/        # Relatórios de qualidade de dados
-├── src/                # Código-fonte
-│   ├── etl/            # Pipeline de extração-transformação-carregamento
-│   ├── indicators/     # Cálculo de indicadores e IIC
-│   └── dashboard/      # Aplicação web (Dash)
-├── scripts/            # Pontos de entrada (run_etl.py, etc.)
-├── notebooks/          # Análises exploratórias
-└── tests/              # Testes unitários
+mobilidade-lisboa/
+├── config.py            # Parâmetros externalizados (raio, pesos IIC, CRS, filtros)
+├── requirements.txt
+├── data/
+│   ├── raw/             # Fontes originais (.7z, .geojson). CSV extraídos não versionados.
+│   └── processed/       # mobilidade.db (gerado pelo ETL)
+├── etl/                 # Pipeline: extract → clean → spatial → derive → load
+├── kpis/                # Indicadores: grupo1, grupo2, iic
+├── app/                 # Dashboard Dash (Fase 4)
+├── notebooks/           # Análise exploratória
+├── reports/             # Relatório de qualidade dos dados
+└── scripts/             # Utilitários (ex.: extração dos .7z)
 ```
 
 ## Instalação
 
-1. Clonar o repositório.
-2. Criar um ambiente virtual e instalar dependências:
-
-   ```bash
-   python -m venv venv
-   source venv/bin/activate    # Linux/Mac
-   venv\Scripts\activate       # Windows
-   pip install -r requirements.txt
-   ```
-
-3. Descarregar os datasets do portal [Lisboa Aberta](https://lisboaaberta.cm-lisboa.pt)
-   e colocá-los em `data/raw/` com os nomes indicados em `config.yaml`:
-   - `GIRA_dados_historicos_S1_2022.csv`
-   - `GIRA_dados_historicos_S2_2022.csv`
-   - `estacoes_metro.geojson`
-   - `rede_ciclavel.geojson`
-
-## Utilização
-
-### Executar o pipeline ETL completo
-
 ```bash
-python scripts/run_etl.py
+python -m venv .venv
+source .venv/bin/activate        # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
 ```
 
-### Calcular indicadores
+## Preparação dos dados
+
+Colocar os ficheiros originais em `data/raw/` e extrair os históricos GIRA:
 
 ```bash
-python scripts/run_indicators.py
+python scripts/preparar_dados.py
 ```
 
-### Executar tudo de uma vez
+## Construção do modelo (fase offline)
+
+Corre o ETL (etapas 1-5), calcula os indicadores (Grupo 1 e Grupo 2 + IIC) e
+persiste tudo em `data/processed/mobilidade.db`:
 
 ```bash
-python scripts/run_all.py
+python construir_modelo.py
 ```
 
-### Lançar o dashboard (Fase 4)
+## Execução do dashboard
 
 ```bash
-python -m src.dashboard.app
+python -m app.app               # servidor local acessível no browser
 ```
-
-## Configuração
-
-Todos os parâmetros do sistema (caminhos, raios de influência, pesos do IIC,
-etc.) estão em `config.yaml`. Pode ser editado sem alterar o código.
-
-## Licença
-
-Trabalho académico no âmbito da Universidade Aberta. Dados de domínio público
-do portal Lisboa Aberta.

@@ -1,26 +1,19 @@
-# Manipulação de dados
-pandas>=2.0.0
-numpy>=1.24.0
+# Dependencias principais do projeto.
+# Instalacao: pip install -r requirements.txt
 
-# Dados geoespaciais
-geopandas>=0.14.0
-shapely>=2.0.0
-pyproj>=3.6.0
+# --- Processamento de dados ---
+pandas>=2.2
+numpy>=1.26
 
-# Persistência
-# sqlite3 é parte da stdlib do Python
+# --- Dados geoespaciais ---
+geopandas>=1.0
+shapely>=2.0
+pyproj>=3.6
 
-# Dashboard (Fase 4)
-dash>=2.14.0
-dash-leaflet>=1.0.0
-plotly>=5.18.0
+# --- Dashboard (Fase 4) ---
+dash>=2.17
+plotly>=5.22
+dash-leaflet>=1.0
 
-# Configuração
-pyyaml>=6.0
-
-# Notebooks (exploração)
-jupyter>=1.0.0
-ipykernel>=6.25.0
-
-# Testes (opcional)
-pytest>=7.4.0
+# --- Auxiliares ---
+py7zr>=0.21        # extracao dos historicos GIRA (.7z)

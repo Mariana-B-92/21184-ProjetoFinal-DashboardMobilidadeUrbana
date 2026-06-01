@@ -1,0 +1,48 @@
+{
+  "historico_gira": {
+    "registos_iniciais": 3938292,
+    "registos_sem_id_estacao": 0,
+    "registos_sem_coordenadas": 0,
+    "registos_sem_timestamp": 0,
+    "registos_com_disponibilidade_nula": 0,
+    "duplicados_removidos": 1820951,
+    "registos_bicicletas_superior_docas": 54,
+    "distribuicao_estado": {
+      "active": 1986957,
+      "repair": 130384
+    },
+    "registos_repair_removidos": 130384,
+    "registos_docas_zero_removidos": 1,
+    "registos_finais": 1986956,
+    "n_estacoes_distintas": 143,
+    "intervalo_temporal": {
+      "inicio": "2022-01-01 12:18:01.508000+00:00",
+      "fim": "2023-02-16 12:27:31+00:00"
+    }
+  },
+  "estacoes_metro": {
+    "registos_iniciais": 50,
+    "registos_finais": 50
+  },
+  "rede_ciclavel": {
+    "registos_iniciais": 1026,
+    "geometrias_nulas_removidas": 1,
+    "registos_finais": 1025
+  },
+  "integracao_espacial": {
+    "n_estacoes_gira": 143,
+    "n_estacoes_metro": 50,
+    "raio_influencia_m": 500,
+    "n_metro_sem_gira_no_buffer": 18,
+    "comp_ciclavel_total_m": 131360.95
+  },
+  "variaveis_derivadas": {
+    "registos_taxa_limitada": 54,
+    "n_estacoes_sem_24h": 3,
+    "estacoes_sem_24h": {
+      "209": 1,
+      "232": 1,
+      "351": 1
+    }
+  }
+}

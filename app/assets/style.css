@@ -1,0 +1,165 @@
+/* ----------------------------------------------------------------------- *
+ * Tema do dashboard - linha refinada / cartografica.
+ * Tipografia com caracter (Archivo + Hanken Grotesk), paleta sobria e
+ * cores do dominio (verde GIRA, cores das linhas de metro).
+ * ----------------------------------------------------------------------- */
+
+@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=Hanken+Grotesk:wght@400;500;600&display=swap');
+
+:root {
+    --fundo: #f4f5f3;
+    --superficie: #ffffff;
+    --tinta: #1b211e;
+    --tinta-suave: #5b655f;
+    --linha: #e2e6e1;
+    --acento: #0a9a4a;          /* verde GIRA */
+    --acento-escuro: #07733a;
+    --sombra: 0 1px 2px rgba(27, 33, 30, .06), 0 4px 16px rgba(27, 33, 30, .05);
+    --raio: 12px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    background: var(--fundo);
+    color: var(--tinta);
+    font-family: 'Hanken Grotesk', sans-serif;
+    font-size: 14px;
+}
+
+h1, h2 { font-family: 'Archivo', sans-serif; letter-spacing: -0.01em; margin: 0; }
+
+/* Estrutura geral: cabecalho / corpo (3 colunas) / analise */
+.app {
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    height: 100vh;
+    gap: 12px;
+    padding: 12px;
+}
+
+.cabecalho {
+    background: var(--tinta);
+    color: #fff;
+    border-radius: var(--raio);
+    padding: 16px 22px;
+}
+.cabecalho h1 { font-size: 20px; font-weight: 800; }
+.cabecalho p { margin: 4px 0 0; color: #b9c2bc; font-size: 13px; }
+
+.corpo {
+    display: grid;
+    grid-template-columns: 260px 1fr 300px;
+    gap: 12px;
+    min-height: 0;
+}
+
+/* Paineis laterais */
+.painel-filtros, .area-indicadores {
+    background: var(--superficie);
+    border: 1px solid var(--linha);
+    border-radius: var(--raio);
+    box-shadow: var(--sombra);
+    padding: 18px;
+    overflow-y: auto;
+}
+.painel-filtros h2, .area-indicadores h2 {
+    font-size: 13px; text-transform: uppercase; letter-spacing: .08em;
+    color: var(--tinta-suave); margin-bottom: 14px;
+}
+.painel-filtros label {
+    display: block; font-weight: 600; font-size: 12px;
+    margin: 18px 0 6px; color: var(--tinta);
+}
+
+/* Mapa */
+.area-mapa {
+    border-radius: var(--raio);
+    overflow: hidden;
+    box-shadow: var(--sombra);
+    border: 1px solid var(--linha);
+    min-height: 0;
+}
+
+/* Cartoes de KPI */
+.painel-kpis { display: grid; gap: 10px; }
+.kpi-card {
+    background: var(--fundo);
+    border: 1px solid var(--linha);
+    border-radius: 10px;
+    padding: 14px;
+}
+.kpi-valor {
+    font-family: 'Archivo', sans-serif; font-weight: 800;
+    font-size: 26px; color: var(--acento-escuro); line-height: 1;
+}
+.kpi-rotulo {
+    margin-top: 6px; font-size: 12px; color: var(--tinta-suave);
+    text-transform: uppercase; letter-spacing: .04em;
+}
+
+/* Area de analise complementar */
+.area-analise {
+    background: var(--superficie);
+    border: 1px solid var(--linha);
+    border-radius: var(--raio);
+    box-shadow: var(--sombra);
+    padding: 16px 18px;
+}
+.area-analise h2 {
+    font-size: 13px; text-transform: uppercase; letter-spacing: .08em;
+    color: var(--tinta-suave); margin-bottom: 12px;
+}
+.placeholders { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.placeholder {
+    height: 120px;
+    border: 1px dashed var(--linha);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    text-align: center; padding: 0 14px;
+    color: var(--tinta-suave); font-size: 13px;
+    background: repeating-linear-gradient(
+        45deg, transparent, transparent 10px,
+        rgba(10, 154, 74, .02) 10px, rgba(10, 154, 74, .02) 20px);
+}
+
+/* Cabecalho e graficos da analise complementar */
+.analise-cabecalho {
+    display: flex; align-items: baseline; gap: 16px; margin-bottom: 12px;
+}
+.estacao-titulo { font-size: 14px; color: var(--tinta); }
+.estacao-titulo .sem-selecao { color: var(--tinta-suave); font-style: italic; }
+.estacao-meta { color: var(--tinta-suave); font-weight: 500; }
+.analise-graficos {
+    display: grid; grid-template-columns: 1.3fr 1.3fr 1fr; gap: 12px;
+}
+.grafico {
+    height: 240px;
+    border: 1px solid var(--linha); border-radius: 10px;
+    background: var(--fundo);
+}
+
+/* Seccao de cobertura do metro (painel de indicadores) */
+.kpi-metro { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--linha); }
+.kpi-metro .dica { font-size: 13px; color: var(--tinta-suave); line-height: 1.5; }
+.kpi-metro-titulo {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 12px; font-size: 14px; flex-wrap: wrap;
+}
+.ponto-linha {
+    width: 12px; height: 12px; border-radius: 50%;
+    display: inline-block; border: 2px solid #fff;
+    box-shadow: 0 0 0 1px var(--linha);
+}
+.kpi-card--metro .kpi-valor { color: var(--tinta); }
+.kpi-card--metro:first-child .kpi-valor { color: var(--acento-escuro); }
+
+/* Bloco de comparacao entre estacoes de metro */
+.bloco-comparacao { display: flex; flex-direction: column; gap: 8px; }
+.dropdown-comparacao { font-size: 12px; }
+.grafico-comp {
+    flex: 1; min-height: 0;
+    border: 1px solid var(--linha); border-radius: 10px;
+    background: var(--fundo);
+}

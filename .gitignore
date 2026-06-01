@@ -1,41 +1,17 @@
-# Dados (não comitar — ficheiros grandes, obter do Lisboa Aberta)
-data/raw/*
-data/processed/*
-data/reports/*
-!data/raw/.gitkeep
-!data/processed/.gitkeep
-!data/reports/.gitkeep
-
-# Python
+# --- Python ---
 __pycache__/
 *.py[cod]
-*$py.class
-*.so
-.Python
-*.egg-info/
-.pytest_cache/
-.coverage
-htmlcov/
-
-# Ambientes virtuais
-venv/
-env/
 .venv/
-.env
-
-# IDEs
-.vscode/
-.idea/
-*.swp
-*.swo
-
-# Sistema operativo
-.DS_Store
-Thumbs.db
-
-# Jupyter
+venv/
 .ipynb_checkpoints/
-*.ipynb_checkpoints
 
-# Logs
-*.log
+# --- Dados extraidos (grandes) e base de dados gerada ---
+# Versionam-se apenas os originais .7z e .geojson em data/raw/.
+data/raw/*.csv
+data/processed/
+
+# --- Relatorios gerados ---
+reports/*.json
+
+# --- Sistema ---
+.DS_Store

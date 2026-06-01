@@ -17,9 +17,19 @@ from etl import clean, derive, extract, spatial
 # --------------------------------------------------------------------------- #
 # Artefactos do ETL (em memoria) - sessao
 # --------------------------------------------------------------------------- #
+def _dados_disponiveis():
+    """Verifica se os CSV do historico GIRA ja foram extraidos para data/raw."""
+    return all(caminho.exists() for caminho in config.FICHEIROS_GIRA)
+
+
 @pytest.fixture(scope="session")
 def artefactos_etl():
     """Corre as Etapas 1-4 do ETL uma vez e devolve os artefactos em memoria."""
+    if not _dados_disponiveis():
+        pytest.skip(
+            "Dados de origem ausentes. Execute primeiro:\n"
+            "  python scripts/preparar_dados.py\n"
+            "  python construir_modelo.py")
     historico = extract.extrair_historico_gira()
     metro = extract.extrair_metro()
     ciclavel = extract.extrair_ciclavel()

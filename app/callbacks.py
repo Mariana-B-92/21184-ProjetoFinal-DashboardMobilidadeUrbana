@@ -101,8 +101,9 @@ def registar_callbacks(app, repo):
         Output("camada-cobertura", "children"),
         Output("kpi-metro", "children"),
         Input("metro", "clickData"),
+        Input("filtro-raio", "value"),
     )
-    def atualizar_cobertura(click_data):
+    def atualizar_cobertura(click_data, raio):
         if not click_data:
             dica = html.Div("Clique numa estação de metro para analisar a "
                             "cobertura na sua área de influência.",
@@ -111,8 +112,11 @@ def registar_callbacks(app, repo):
 
         propriedades = click_data.get("properties", {})
         id_metro = propriedades.get("id_metro")
-        cobertura = repo.cobertura_metro(id_metro)
+        cobertura = repo.cobertura_metro(id_metro, raio=raio)
         indicadores = repo.indicadores_metro(id_metro)
+
+        raio_oficial = config.RAIO_INFLUENCIA_M
+        exploratorio = raio != raio_oficial
 
         # --- Camadas de destaque no mapa ---
         camadas = []
@@ -139,28 +143,44 @@ def registar_callbacks(app, repo):
                 children=[dl.Tooltip(e["nome_estacao"])]))
 
         # --- Cartoes de indicadores do Grupo 2 ---
+        # As medidas de cobertura refletem o raio escolhido (exploratorio se
+        # diferente do oficial); o IIC mantem-se o indicador oficial (R=500 m).
         cor = CORES_LINHA.get(indicadores["linha"], "#6b7280")
-        kpis = html.Div(children=[
-            html.Div(className="kpi-metro-titulo", children=[
-                html.Span(className="ponto-linha",
-                          style={"backgroundColor": cor}),
-                html.Strong(indicadores["nome_metro"]),
-                html.Span(f"linha {indicadores['linha']}",
-                          className="estacao-meta"),
-            ]),
-            html.Div(className="painel-kpis", children=[
-                _cartao_metro(f"{indicadores['iic']:.2f}",
-                              "Índice de Intermodalidade"),
-                _cartao_metro(f"{indicadores['dist_gira_min_m']:.0f} m",
-                              "GIRA mais próxima"),
-                _cartao_metro(f"{int(indicadores['n_gira_influencia'])}",
-                              "Estações GIRA na área"),
-                _cartao_metro(f"{indicadores['comp_ciclavel_m']/1000:.2f} km",
-                              "Rede ciclável na área"),
-                _cartao_metro(f"{indicadores['disp_pico']:.1f}",
-                              "Disponib. nas horas de pico"),
-            ]),
-        ])
+        cartoes = [
+            _cartao_metro(f"{indicadores['iic']:.2f}",
+                          f"IIC (oficial, R={raio_oficial} m)"),
+            _cartao_metro(f"{cobertura['dist_gira_min_m']:.0f} m",
+                          "GIRA mais próxima"),
+            _cartao_metro(f"{cobertura['n_gira']}",
+                          "Estações GIRA na área"),
+            _cartao_metro(f"{cobertura['comp_ciclavel_m']/1000:.2f} km",
+                          "Rede ciclável na área"),
+            _cartao_metro(f"{cobertura['disp_pico']:.1f}",
+                          "Disponib. nas horas de pico"),
+        ]
+
+        titulo_children = [
+            html.Span(className="ponto-linha", style={"backgroundColor": cor}),
+            html.Strong(indicadores["nome_metro"]),
+            html.Span(f"linha {indicadores['linha']}", className="estacao-meta"),
+        ]
+
+        corpo = [
+            html.Div(className="kpi-metro-titulo", children=titulo_children),
+            html.Div(className="painel-kpis", children=cartoes),
+        ]
+        # Nota de raio: confirma o oficial ou assinala a exploracao.
+        if exploratorio:
+            corpo.append(html.Div(
+                f"Cobertura calculada a R={raio} m (exploratório). "
+                f"O IIC mantém-se no raio oficial de {raio_oficial} m.",
+                className="nota-raio nota-raio--exploratorio"))
+        else:
+            corpo.append(html.Div(
+                f"Raio de influência: {raio_oficial} m (oficial).",
+                className="nota-raio"))
+
+        kpis = html.Div(children=corpo)
         return camadas, kpis
 
     @app.callback(

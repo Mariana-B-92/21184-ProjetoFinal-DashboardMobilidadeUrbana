@@ -149,10 +149,14 @@ class RepositorioDados:
     def cobertura_metro(self, id_metro, raio=None):
         """Area de influencia de uma estacao de metro e elementos contidos.
 
-        Calculado em CRS metrico (consistente com o ETL) e devolvido em WGS84:
-          - buffer: poligono da area de influencia (raio R);
-          - gira: estacoes GIRA dentro da area;
-          - ciclavel: porcoes de segmentos cicláveis contidas no buffer.
+        Calculado em CRS metrico (consistente com o ETL) e devolvido em WGS84.
+        As medidas (n_gira, comp_ciclavel_m, disp_pico, dist_gira_min_m) sao
+        calculadas para o raio indicado, permitindo a exploracao interativa do
+        raio de influencia. Para raios diferentes do oficial (config), estas
+        medidas sao exploratorias e nao substituem os indicadores persistidos.
+
+        Devolve um dicionario com: buffer, gira, ciclavel (geometrias) e as
+        medidas n_gira, comp_ciclavel_m, disp_pico, dist_gira_min_m.
         """
         raio = raio if raio is not None else config.RAIO_INFLUENCIA_M
         metro = self._metro_m[self._metro_m["id_metro"] == id_metro]
@@ -161,14 +165,23 @@ class RepositorioDados:
         ponto = metro.geometry.iloc[0]
         buffer_m = ponto.buffer(raio)
 
-        # Estacoes GIRA na area de influencia.
+        # Estacoes GIRA na area de influencia (e distancia minima, que nao
+        # depende do raio, mas e devolvida por conveniencia).
         distancias = self._gira_m.geometry.distance(ponto)
         idx_dentro = distancias.index[distancias <= raio]
         gira_dentro = self.estacoes_gira.loc[idx_dentro]
+        dist_min = float(distancias.min())
 
         # Porcoes de rede ciclavel contidas no buffer (intersecao).
         intersecao = self._ciclavel_m.geometry.intersection(buffer_m)
         intersecao = intersecao[~intersecao.is_empty]
+        comp_ciclavel_m = float(intersecao.length.sum())
+
+        # Disponibilidade media nas horas de pico das GIRA contidas (Grupo 2).
+        if len(gira_dentro) > 0 and "disponibilidade_hora_pico" in gira_dentro:
+            disp_pico = float(gira_dentro["disponibilidade_hora_pico"].mean())
+        else:
+            disp_pico = 0.0
 
         buffer_wgs = gpd.GeoSeries([buffer_m], crs=config.CRS_METRICO).to_crs(
             config.CRS_GEOGRAFICO).iloc[0]
@@ -177,7 +190,12 @@ class RepositorioDados:
             config.CRS_GEOGRAFICO)
 
         return {"buffer": buffer_wgs, "gira": gira_dentro,
-                "ciclavel": ciclavel_wgs}
+                "ciclavel": ciclavel_wgs,
+                "n_gira": len(gira_dentro),
+                "comp_ciclavel_m": comp_ciclavel_m,
+                "disp_pico": disp_pico,
+                "dist_gira_min_m": dist_min,
+                "raio": raio}
 
     def indicadores_metro(self, id_metro):
         """Linha de indicadores do Grupo 2 de uma estacao de metro."""

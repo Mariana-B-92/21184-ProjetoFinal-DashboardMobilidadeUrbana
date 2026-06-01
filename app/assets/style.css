@@ -155,6 +155,19 @@ h1, h2 { font-family: 'Archivo', sans-serif; letter-spacing: -0.01em; margin: 0;
 .kpi-card--metro .kpi-valor { color: var(--tinta); }
 .kpi-card--metro:first-child .kpi-valor { color: var(--acento-escuro); }
 
+/* Nota sobre o raio de influencia */
+.nota-raio {
+    margin-top: 12px; font-size: 11.5px; line-height: 1.4;
+    color: var(--tinta-suave);
+}
+.nota-raio--exploratorio {
+    color: #8a5a00;
+    background: #fff7e6;
+    border: 1px solid #f4d68a;
+    border-radius: 8px;
+    padding: 8px 10px;
+}
+
 /* Bloco de comparacao entre estacoes de metro */
 .bloco-comparacao { display: flex; flex-direction: column; gap: 8px; }
 .dropdown-comparacao { font-size: 12px; }

@@ -23,7 +23,6 @@ efeito, a pertenca de cada estacao GIRA ao buffer de cada estacao de metro.
 """
 
 import geopandas as gpd
-import pandas as pd
 
 import config
 

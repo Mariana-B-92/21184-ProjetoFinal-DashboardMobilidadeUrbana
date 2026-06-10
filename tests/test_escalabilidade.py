@@ -3,7 +3,7 @@ Testes de escalabilidade (Capitulo 4 - Testes).
 
 Avaliam como o desempenho do sistema evolui quando o volume de dados cresce.
 Em vez de medir um unico ponto, medem o tempo em funcao do tamanho do problema e
-verificam que o crescimento e sub-linear ou linear (e nao explosivo), graças aos
+verificam que o crescimento e sub-linear ou linear (e nao explosivo), gracas aos
 indices da base de dados e a agregacao server-side.
 
 Os tempos sao impressos (visiveis com `pytest -s`) para construir as tabelas e

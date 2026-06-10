@@ -1,11 +1,11 @@
 """
 Orquestrador do pipeline de ETL.
 
-Etapas implementadas: 1 (Extracao), 2 (Limpeza), 3 (Integracao espacial),
-4 (Variaveis derivadas). Etapa em falta: 5 (Carregamento).
-
-O calculo dos indicadores (modulo kpis/) corre sobre as agregacoes devolvidas
-por esta funcao, antes da persistencia final.
+Cobre as Etapas 1-4: 1 (Extracao), 2 (Limpeza), 3 (Integracao espacial) e
+4 (Variaveis derivadas). A Etapa 5 (Carregamento) e deliberadamente externa a
+este modulo: corre em etl/load.py, orquestrada por construir_modelo.py, DEPOIS
+do calculo dos indicadores (kpis/) sobre as agregacoes devolvidas aqui. Esta
+separacao mantem o pipeline focado na transformacao e a persistencia isolada.
 """
 
 import json
@@ -74,6 +74,9 @@ def correr_etl():
 
 
 if __name__ == "__main__":
+    # Silencia o ruido cosmetico de avisos do pandas/geopandas/shapely nesta
+    # execucao offline (ver nota igual em construir_modelo.py). Deliberado e
+    # limitado a este script: NAO afeta o runtime do dashboard.
     warnings.filterwarnings("ignore")
     resultado = correr_etl()
     print(json.dumps(resultado["qualidade"], ensure_ascii=False, indent=2))

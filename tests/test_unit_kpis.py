@@ -13,7 +13,7 @@ import pandas as pd
 import pytest
 
 import config
-from kpis import iic
+from kpis import grupo2, iic
 
 
 # --------------------------------------------------------------------------- #
@@ -118,3 +118,24 @@ def test_hora_pico_valida(indicadores_g1):
 def test_ivd_nao_negativo(indicadores_g1):
     """O indice de variabilidade diaria e nao-negativo (e uma raiz de RMS)."""
     assert (indicadores_g1["indice_variabilidade_diaria"] >= 0).all()
+
+
+# --------------------------------------------------------------------------- #
+# Grupo 2: disponibilidade nas horas de pico (disp_pico)
+# --------------------------------------------------------------------------- #
+def test_disp_pico_area_vazia_e_zero():
+    """Sem GIRA na area de influencia, disp_pico(j) = 0 (Gj(R) vazio)."""
+    indicadores = pd.DataFrame(
+        {"disponibilidade_hora_pico": [3.0, 5.0]},
+        index=pd.Index([1, 2], name="id_estacao"))
+    disp = grupo2.calcular_disp_pico({10: []}, indicadores)
+    assert disp[10] == 0.0
+
+
+def test_disp_pico_media_das_gira_contidas():
+    """Com GIRA na area, disp_pico(j) e a media das suas disponibilidades de pico."""
+    indicadores = pd.DataFrame(
+        {"disponibilidade_hora_pico": [3.0, 5.0]},
+        index=pd.Index([1, 2], name="id_estacao"))
+    disp = grupo2.calcular_disp_pico({20: [1, 2]}, indicadores)
+    assert disp[20] == pytest.approx(4.0)

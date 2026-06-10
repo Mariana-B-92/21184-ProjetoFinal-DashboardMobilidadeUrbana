@@ -13,7 +13,7 @@ import pytest
 from shapely.geometry import LineString, Point
 
 import config
-from etl import clean, spatial
+from etl import clean, derive, spatial
 
 
 # --------------------------------------------------------------------------- #
@@ -79,6 +79,43 @@ def test_filtro_ciclavel_executado():
     assert (limpo["SITUACAO"] == "Executado").all()
     assert len(limpo) == 1  # B excluido (Projeto), C excluido (geometria nula)
     assert q["geometrias_nulas_removidas"] == 1
+
+
+def test_filtro_metro_em_funcionamento():
+    """So permanecem estacoes de metro com a situacao valida do config."""
+    gdf = gpd.GeoDataFrame({
+        "OBJECTID": [1, 2], "NOME": ["A", "B"], "LINHA": ["Azul", "Verde"],
+        "SITUACAO": [config.SITUACAO_METRO_VALIDA, "Em construcao"],
+        "geometry": [Point(-9.1, 38.7), Point(-9.2, 38.7)],
+    }, crs=config.CRS_GEOGRAFICO)
+    limpo, q = clean.limpar_metro(gdf)
+    assert len(limpo) == 1
+    assert limpo["NOME"].iloc[0] == "A"
+    assert q["registos_finais"] == 1
+
+
+# --------------------------------------------------------------------------- #
+# Variaveis derivadas: clamp da taxa de ocupacao (questao do orientador)
+# --------------------------------------------------------------------------- #
+def test_taxa_ocupacao_limitada_ao_intervalo_unitario(monkeypatch):
+    """numbicicletas > numdocas e limitado a 1, garantindo a TMD em [0, 1].
+
+    Estacao com capacidade 10 e duas observacoes (5 e 20 bicicletas): a segunda
+    excede a capacidade e e truncada a taxa 1, pelo que a media fica em 0,75.
+    """
+    monkeypatch.setattr(config, "LIMITAR_TAXA_OCUPACAO", True)
+    historico = pd.DataFrame({
+        "id_estacao": [1, 1],
+        "numbicicletas": [5, 20],
+        "hora": [8, 9],
+    })
+    estacoes_gira = pd.DataFrame({"id_estacao": [1], "total_docas": [10]})
+
+    agg_estacao, _, q = derive.calcular_variaveis_derivadas(
+        historico, estacoes_gira)
+    assert q["registos_taxa_limitada"] == 1
+    assert agg_estacao.loc[1, "media_taxa_ocupacao"] == pytest.approx(0.75)
+    assert agg_estacao.loc[1, "media_taxa_ocupacao"] <= 1.0
 
 
 # --------------------------------------------------------------------------- #

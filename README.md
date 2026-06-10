@@ -56,7 +56,7 @@ Os indicadores estão organizados em dois grupos.
 
 O **Grupo 1 — Disponibilidade GIRA** caracteriza cada estação de bicicletas:
 disponibilidade média, taxa média de disponibilidade, índice de variabilidade
-diária e hora de pico.
+diária e hora de pico (a hora de menor disponibilidade).
 
 O **Grupo 2 — Cobertura de Infraestrutura** caracteriza cada estação de metro
 quanto à sua articulação com a bicicleta: distância à estação GIRA mais próxima,
@@ -69,13 +69,16 @@ de estações e conectividade ciclável num valor sintético entre 0 e 1.
 
 ```
 mobilidade-lisboa/
-├── config.py              # Parâmetros externalizados (raios, pesos, CRS, filtros)
+├── config.py              # Parâmetros externalizados (raios, pesos, CRS, filtros, paleta)
 ├── construir_modelo.py    # Orquestrador da fase offline (ETL + KPIs + carregamento)
+├── iniciar_dashboard.py   # Lançador simples (arranca o servidor e abre o navegador)
+├── iniciar_dashboard.bat  # Atalho de duplo-clique para o lançador (Windows)
 ├── requirements.txt
 ├── pytest.ini
+├── mypy.ini
 │
 ├── data/
-│   ├── raw/               # Ficheiros de origem (.7z, .geojson)
+│   ├── raw/               # Ficheiros de origem (.7z, .csv, .geojson)
 │   └── processed/         # Base de dados gerada (mobilidade.db)
 │
 ├── etl/                   # Pipeline de ETL
@@ -131,20 +134,30 @@ python construir_modelo.py
 ```
 
 Esta etapa só precisa de ser executada uma vez (ou sempre que os dados de origem
-ou os parâmetros mudem).
+ou os parâmetros mudem). Inclui ainda a pré-agregação da série diária global,
+para a vista inicial do *dashboard* abrir instantaneamente.
 
-**3. Arrancar o dashboard:**
+**3. Arrancar o dashboard.** Para utilização normal, basta o duplo-clique em
+`iniciar_dashboard.bat` (Windows) ou, em qualquer sistema:
+
+```bash
+python iniciar_dashboard.py
+```
+
+O servidor arranca e o navegador abre automaticamente em
+`http://127.0.0.1:8050`. Para desenvolvimento (com recarregamento automático e
+avisos), pode usar-se o modo *debug*:
 
 ```bash
 python -m app.app
 ```
 
-A aplicação fica disponível em `http://127.0.0.1:8050`.
+Em qualquer dos casos, a aplicação fica disponível em `http://127.0.0.1:8050`.
 
 ## Testes
 
-A suite de testes cobre os indicadores, o pipeline, a integração e o
-desempenho do sistema:
+A suite de testes cobre os indicadores, o pipeline, a camada de apresentação,
+a integração, o desempenho e a escalabilidade do sistema:
 
 ```bash
 pytest                                 # toda a suite
@@ -157,9 +170,10 @@ Ver `tests/README.md` para a descrição de cada conjunto de testes.
 
 Os parâmetros do sistema estão centralizados em `config.py` e podem ser
 ajustados sem alterar o código: raio das áreas de influência, truncatura de
-distância, pesos do IIC, sistemas de coordenadas e critérios de filtragem dos
-dados. Esta externalização facilita a análise de sensibilidade e a adaptação a
-outros contextos.
+distância, pesos do IIC, sistemas de coordenadas, critérios de filtragem dos
+dados e a paleta de cores usada de forma coerente no mapa, nas legendas e nos
+gráficos. Esta externalização facilita a análise de sensibilidade e a adaptação
+a outros contextos.
 
 ## Fontes de dados
 

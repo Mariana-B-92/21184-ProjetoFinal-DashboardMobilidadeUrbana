@@ -93,7 +93,9 @@ def limpar_historico_gira(historico):
     _registar(q, "distribuicao_estado",
               {str(k): int(v) for k, v in df["estado"].value_counts().items()})
 
-    # --- Filtro: estado "repair" (configuravel) ---
+    # --- Filtro: manter so o estado "active" (configuravel) ---
+    # So "active" e oferta efetiva; todos os outros estados (incluindo "repair")
+    # sao removidos. O contador agrega esses registos nao-active removidos.
     if config.EXCLUIR_ESTADO_REPAIR:
         antes = len(df)
         df = df[df["estado"] == "active"]
@@ -133,7 +135,7 @@ def limpar_metro(gdf):
 
 
 def limpar_ciclavel(gdf):
-    """Filtra segmentos cicláveis executados e remove geometrias nulas."""
+    """Filtra segmentos ciclaveis executados e remove geometrias nulas."""
     q = {"registos_iniciais": int(len(gdf))}
     g = gdf[gdf["SITUACAO"] == config.SITUACAO_CICLAVEL_VALIDA].copy()
     nulas = int(g.geometry.isna().sum())

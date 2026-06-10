@@ -16,9 +16,12 @@ import config
 # Colunas esperadas em cada fonte (validacao de integridade estrutural).
 COLUNAS_GIRA = ["desigcomercial", "numbicicletas", "numdocas",
                 "position", "entity_ts", "estado"]
-COLUNAS_METRO = ["NOME", "LINHA", "SITUACAO", "geometry"]
-COLUNAS_CICLAVEL = ["DESIGNACAO", "TIPOLOGIA", "NIVEL_SEGREGACAO",
-                    "SITUACAO", "COMPRIMENTO", "FREGUESIA", "geometry"]
+COLUNAS_METRO = ["OBJECTID", "NOME", "LINHA", "SITUACAO", "geometry"]
+# Inclui HIERARQUIA e COMP_KM porque sao consumidas no carregamento (load.py);
+# validar a presenca aqui evita uma falha tardia na Etapa 5.
+COLUNAS_CICLAVEL = ["OBJECTID", "DESIGNACAO", "TIPOLOGIA", "NIVEL_SEGREGACAO",
+                    "SITUACAO", "HIERARQUIA", "COMPRIMENTO", "COMP_KM",
+                    "FREGUESIA", "geometry"]
 
 
 def _validar_colunas(df, esperadas, nome):

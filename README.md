@@ -10,6 +10,11 @@ conjunto de indicadores que permitem caracterizar a disponibilidade do sistema
 GIRA e avaliar o potencial de intermodalidade bicicleta–metro, apresentando os
 resultados num *dashboard* cartográfico.
 
+> **▶ Ver dashboard online:** https://mariana-b-92-dashboard-mobilidadeurbana-lisboa.hf.space
+>
+> Forma recomendada de consultar o *dashboard* — sem qualquer instalação.
+> Em alternativa, pode correr-se localmente (ver [Utilização](#utilização)).
+
 ## Índice
 
 - [Visão geral](#visão-geral)
@@ -19,6 +24,7 @@ resultados num *dashboard* cartográfico.
 - [Instalação](#instalação)
 - [Utilização](#utilização)
 - [Testes](#testes)
+- [Publicação (Hugging Face Spaces)](#publicação-hugging-face-spaces)
 - [Configuração](#configuração)
 - [Fontes de dados](#fontes-de-dados)
 
@@ -73,6 +79,7 @@ mobilidade-lisboa/
 ├── construir_modelo.py    # Orquestrador da fase offline (ETL + KPIs + carregamento)
 ├── iniciar_dashboard.py   # Lançador simples (arranca o servidor e abre o navegador)
 ├── iniciar_dashboard.bat  # Atalho de duplo-clique para o lançador (Windows)
+├── sincronizar_deploy.ps1 # Sincroniza a app com o clone de deploy do HuggingFace
 ├── requirements.txt
 ├── pytest.ini
 ├── mypy.ini
@@ -104,7 +111,11 @@ mobilidade-lisboa/
 ├── tests/                 # Testes (unitários, sistema, desempenho, escalabilidade)
 ├── scripts/               # Utilitários (extração dos dados de origem)
 ├── notebooks/             # Análise exploratória
-└── reports/               # Relatório de qualidade dos dados
+├── reports/               # Relatório de qualidade dos dados
+│
+└── deploy-huggingface/   # Clone de deploy do HuggingFace Space
+                          #   (subconjunto da app + modelo + Dockerfile;
+                          #   repositório git autónomo)
 ```
 
 ## Instalação
@@ -137,8 +148,14 @@ Esta etapa só precisa de ser executada uma vez (ou sempre que os dados de orige
 ou os parâmetros mudem). Inclui ainda a pré-agregação da série diária global,
 para a vista inicial do *dashboard* abrir instantaneamente.
 
-**3. Arrancar o dashboard.** Para utilização normal, basta o duplo-clique em
-`iniciar_dashboard.bat` (Windows) ou, em qualquer sistema:
+**3. Arrancar o dashboard.** A versão publicada está disponível online, sem
+instalação, em
+https://mariana-b-92-dashboard-mobilidadeurbana-lisboa.hf.space (forma
+recomendada).
+
+Para correr **localmente** — útil como alternativa offline ou para
+desenvolvimento — basta o duplo-clique em `iniciar_dashboard.bat` (Windows)
+ou, em qualquer sistema:
 
 ```bash
 python iniciar_dashboard.py
@@ -165,6 +182,33 @@ pytest -s tests/test_desempenho.py     # com os tempos medidos
 ```
 
 Ver `tests/README.md` para a descrição de cada conjunto de testes.
+
+## Publicação (Hugging Face Spaces)
+
+O *dashboard* está publicado num Hugging Face Space, cujo clone vive em
+`deploy-huggingface/` (repositório git autónomo, ligado ao
+remote do HuggingFace). Esse clone contém apenas o necessário para correr em
+produção: a app, o `config.py`, o modelo já construído (`mobilidade.db`), o
+`Dockerfile` e um `requirements.txt` com o servidor de produção (`gunicorn`).
+
+Como o código vive em dois sítios, há um script que propaga as alterações da
+app principal para o clone de deploy — copiando só o que é partilhado (`app/`,
+`config.py`, `mobilidade.db`) e preservando os ficheiros específicos de
+produção (`Dockerfile`, `requirements.txt`, `README.md` do Space):
+
+```powershell
+# Pre-visualizar o que mudaria (nao envia nada):
+.\sincronizar_deploy.ps1
+
+# Copiar, fazer commit e push para o Hugging Face:
+.\sincronizar_deploy.ps1 -Push -Mensagem "descricao da alteracao"
+```
+
+Fluxo típico após alterar o código ou reconstruir o modelo:
+
+1. (Se os dados/parâmetros mudaram) `python construir_modelo.py`;
+2. `.\sincronizar_deploy.ps1 -Push -Mensagem "..."`;
+3. O Hugging Face reconstrói a imagem Docker e republica automaticamente.
 
 ## Configuração
 

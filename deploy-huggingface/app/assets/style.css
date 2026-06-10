@@ -1,0 +1,372 @@
+/* ----------------------------------------------------------------------- *
+ * Tema do dashboard - linha refinada / cartografica.
+ * Tipografia com caracter (Archivo + Hanken Grotesk), paleta sobria e
+ * cores do dominio (verde GIRA, cores das linhas de metro). Cabecalho em
+ * azul-marinho, como nos storyboards.
+ * ----------------------------------------------------------------------- */
+
+@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=Hanken+Grotesk:wght@400;500;600&display=swap');
+
+:root {
+    --fundo: #f4f5f3;
+    --superficie: #ffffff;
+    --tinta: #1b211e;
+    --tinta-suave: #5b655f;
+    --linha: #e2e6e1;
+    --acento: #0a9a4a;          /* verde GIRA */
+    --acento-escuro: #07733a;
+    --marinho: #16315f;         /* azul-marinho do cabecalho (storyboards) */
+    --marinho-fundo: #1d3c6e;
+    --sombra: 0 1px 2px rgba(27, 33, 30, .05), 0 6px 20px rgba(27, 33, 30, .06);
+    --sombra-forte: 0 2px 6px rgba(27, 33, 30, .08), 0 14px 32px rgba(27, 33, 30, .10);
+    --raio: 12px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    background: var(--fundo);
+    color: var(--tinta);
+    font-family: 'Hanken Grotesk', sans-serif;
+    font-size: 14px;
+}
+
+h1, h2 { font-family: 'Archivo', sans-serif; letter-spacing: -0.01em; margin: 0; }
+
+/* Estrutura geral: cabecalho / corpo (3 colunas) / analise */
+.app {
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    height: 100vh;
+    gap: 12px;
+    padding: 12px;
+}
+
+/* Cabecalho azul-marinho com marca + titulo + "Sobre" */
+.cabecalho {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: linear-gradient(135deg, var(--marinho) 0%, var(--marinho-fundo) 100%);
+    color: #fff;
+    border-radius: var(--raio);
+    padding: 14px 22px;
+    box-shadow: var(--sombra-forte);
+}
+.cabecalho-marca { height: 34px; width: auto; display: block; flex: 0 0 auto; }
+.cabecalho-texto { min-width: 0; }
+.cabecalho h1 { font-size: 20px; font-weight: 800; }
+.cabecalho p { margin: 3px 0 0; color: #c2cee0; font-size: 13px; }
+.cabecalho-sobre {
+    margin-left: auto; flex: 0 0 auto;
+    font-family: 'Hanken Grotesk', sans-serif;
+    font-size: 12px; font-weight: 600; letter-spacing: .04em;
+    color: #c2cee0; padding: 6px 12px;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, .25); border-radius: 999px;
+    cursor: pointer;
+    transition: background .15s ease, color .15s ease, border-color .15s ease;
+}
+.cabecalho-sobre:hover {
+    background: rgba(255, 255, 255, .12); color: #fff;
+    border-color: rgba(255, 255, 255, .5);
+}
+
+.corpo {
+    display: grid;
+    grid-template-columns: 260px 1fr 300px;
+    gap: 12px;
+    min-height: 0;
+}
+
+/* Paineis laterais */
+.painel-filtros, .area-indicadores {
+    background: var(--superficie);
+    border: 1px solid var(--linha);
+    border-radius: var(--raio);
+    box-shadow: var(--sombra);
+    padding: 18px;
+    overflow-y: auto;
+}
+.painel-filtros h2, .area-indicadores h2 {
+    font-size: 13px; text-transform: uppercase; letter-spacing: .08em;
+    color: var(--tinta-suave); margin-bottom: 14px;
+}
+.painel-filtros label {
+    display: block; font-weight: 600; font-size: 12px;
+    margin: 18px 0 6px; color: var(--tinta);
+}
+
+/* Checklist de camadas do mapa */
+.lista-camadas { display: grid; gap: 6px; margin-top: 2px; }
+.lista-camadas label {
+    display: flex; align-items: center; gap: 8px;
+    margin: 0; font-weight: 500; font-size: 13px; cursor: pointer;
+}
+.lista-camadas input[type="checkbox"] { accent-color: var(--acento); cursor: pointer; }
+
+/* Opcao "Localizar no mapa" da comparacao: discreta, alinhada a direita. */
+.check-mapa { margin: 2px 0 6px; display: flex; justify-content: flex-end; }
+.check-mapa label {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 11.5px; color: var(--tinta-suave); cursor: pointer;
+}
+.check-mapa input[type="checkbox"] {
+    accent-color: var(--acento); cursor: pointer; margin: 0;
+}
+
+/* Texto de ajuda curto sob uma etiqueta */
+.filtro-ajuda {
+    margin: -2px 0 8px; font-size: 11px; line-height: 1.35;
+    color: var(--tinta-suave, #6b746f);
+}
+
+/* Seletores "Localizar estacao" (pesquisaveis por nome) */
+.dropdown-localizar { font-size: 13px; }
+
+/* Pesos do IIC (sliders de sensibilidade do ranking) */
+.pesos-iic { display: grid; gap: 2px; }
+.pesos-iic .peso-rotulo {
+    font-size: 11px; font-weight: 600; color: var(--tinta);
+    margin-top: 4px;
+}
+.pesos-iic .rc-slider { margin-bottom: 2px; }
+
+.btn-limpar {
+    margin-top: 22px; width: 100%;
+    font-family: 'Hanken Grotesk', sans-serif;
+    font-size: 12px; font-weight: 600; letter-spacing: .03em;
+    color: var(--tinta); background: var(--fundo);
+    border: 1px solid var(--linha); border-radius: 8px;
+    padding: 9px 12px; cursor: pointer;
+    transition: background .15s ease, border-color .15s ease, color .15s ease;
+}
+.btn-limpar:hover {
+    background: #eef1ee; border-color: #cfd6d0; color: var(--acento-escuro);
+}
+
+/* Painel "Sobre" (modal sobreposto, aberto pelo botao do cabecalho) */
+.sobre-modal {
+    display: none;
+    position: fixed; inset: 0; z-index: 2000;
+    background: rgba(16, 26, 45, .45);
+    align-items: center; justify-content: center; padding: 24px;
+}
+.sobre-modal.aberto { display: flex; }
+.sobre-caixa {
+    position: relative;
+    background: var(--superficie);
+    border: 1px solid var(--linha);
+    border-radius: var(--raio);
+    box-shadow: var(--sombra-forte);
+    max-width: 520px; width: 100%;
+    padding: 24px 26px; max-height: 80vh; overflow-y: auto;
+}
+.sobre-caixa h2 {
+    font-family: 'Archivo', sans-serif; font-size: 18px; font-weight: 800;
+    color: var(--tinta); margin-bottom: 10px;
+}
+.sobre-caixa h3 {
+    font-family: 'Archivo', sans-serif; font-size: 13px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .05em;
+    color: var(--acento-escuro); margin: 16px 0 4px;
+}
+.sobre-caixa p {
+    margin: 0; font-size: 13px; line-height: 1.5; color: var(--tinta-suave);
+}
+.sobre-fechar {
+    position: absolute; top: 12px; right: 14px;
+    width: 30px; height: 30px; border-radius: 50%;
+    border: 1px solid var(--linha); background: var(--fundo);
+    font-size: 18px; line-height: 1; color: var(--tinta-suave); cursor: pointer;
+    transition: background .15s ease, color .15s ease;
+}
+.sobre-fechar:hover { background: #eef1ee; color: var(--tinta); }
+
+/* Mapa */
+.area-mapa {
+    position: relative;
+    border-radius: var(--raio);
+    overflow: hidden;
+    box-shadow: var(--sombra-forte);
+    border: 1px solid var(--linha);
+    min-height: 0;
+}
+/* Contentor que preenche a area do mapa; a sua className controla quais panes
+ * ficam visiveis (ver regras .cam-oculta-* abaixo). */
+.mapa-camadas { position: absolute; top: 0; right: 0; bottom: 0; left: 0; }
+.cam-oculta-gira .leaflet-p-gira-pane { display: none !important; }
+.cam-oculta-metro .leaflet-p-metro-pane { display: none !important; }
+.cam-oculta-ciclavel .leaflet-p-ciclavel-pane { display: none !important; }
+.cam-oculta-influencia .leaflet-p-cobertura-pane { display: none !important; }
+
+/* Cartoes de KPI (coluna direita, empilhados como nos storyboards) */
+.painel-kpis { display: grid; gap: 10px; }
+.kpi-card {
+    background: var(--fundo);
+    border: 1px solid var(--linha);
+    border-radius: 10px;
+    padding: 14px;
+    transition: box-shadow .2s ease, transform .2s ease, border-color .2s ease;
+}
+.kpi-card:hover {
+    box-shadow: var(--sombra);
+    border-color: #d3dad4;
+    transform: translateY(-1px);
+}
+.kpi-valor {
+    font-family: 'Archivo', sans-serif; font-weight: 800;
+    font-size: 26px; color: var(--acento-escuro); line-height: 1;
+    font-variant-numeric: tabular-nums;
+}
+.kpi-rotulo {
+    margin-top: 6px; font-size: 12px; color: var(--tinta-suave);
+    text-transform: uppercase; letter-spacing: .04em;
+}
+.kpi-card--metro .kpi-valor { color: var(--tinta); }
+.kpi-card--iic .kpi-valor { color: var(--acento-escuro); }
+
+/* Medidor 0-1 do IIC (cartao kpi-card--iic) */
+.gauge { margin-top: 10px; }
+.gauge-trilho {
+    height: 6px; border-radius: 999px;
+    background: var(--linha); overflow: hidden;
+}
+.gauge-fill { height: 100%; border-radius: 999px; transition: width .45s ease; }
+.gauge-escala {
+    display: flex; justify-content: space-between;
+    margin-top: 4px; font-size: 10px; color: var(--tinta-suave);
+    font-variant-numeric: tabular-nums;
+}
+
+/* Titulo da entidade selecionada (GIRA ou metro) no painel direito */
+.kpi-metro-titulo {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 12px; font-size: 14px; flex-wrap: wrap;
+}
+.ponto-linha {
+    width: 12px; height: 12px; border-radius: 50%;
+    display: inline-block; border: 2px solid #fff;
+    box-shadow: 0 0 0 1px var(--linha);
+}
+
+/* Legenda do mapa: lista discreta de classes, sobreposta ao canto do mapa */
+.legenda-mapa {
+    position: absolute;
+    right: 12px;
+    bottom: 30px;
+    z-index: 1000;
+    background: rgba(255, 255, 255, .94);
+    padding: 9px 11px;
+    border-radius: 8px;
+    border: 1px solid var(--linha);
+    box-shadow: var(--sombra);
+}
+.legenda-titulo {
+    font-size: 11px; font-weight: 600; color: var(--tinta);
+    margin-bottom: 7px; letter-spacing: .01em;
+}
+.legenda-subtitulo {
+    font-size: 10.5px; color: var(--tinta-suave);
+    margin: -4px 0 7px; text-transform: uppercase; letter-spacing: .05em;
+}
+.legenda-linha {
+    display: flex; align-items: center; gap: 8px; margin: 4px 0;
+}
+.legenda-cor {
+    width: 12px; height: 12px; border-radius: 50%;
+    flex: 0 0 auto; border: 1px solid rgba(27, 33, 30, .12);
+}
+.legenda-traco {
+    width: 16px; height: 4px; border-radius: 2px; flex: 0 0 auto;
+}
+.legenda-rotulo {
+    font-size: 11.5px; color: var(--tinta-suave);
+    font-variant-numeric: tabular-nums;
+}
+
+/* Popup informativo da estacao (Leaflet) — Storyboards 2 e 3 */
+.leaflet-popup-content-wrapper {
+    border-radius: 10px;
+    box-shadow: var(--sombra-forte);
+    border: 1px solid var(--linha);
+}
+.leaflet-popup-content { margin: 11px 13px; }
+.popup-mapa { font-family: 'Hanken Grotesk', sans-serif; min-width: 184px; }
+.popup-tipo {
+    font-size: 10.5px; text-transform: uppercase; letter-spacing: .08em;
+    color: var(--tinta-suave); font-weight: 600;
+}
+.popup-nome {
+    font-family: 'Archivo', sans-serif; font-weight: 800; font-size: 15px;
+    color: var(--tinta); margin: 1px 0 9px; line-height: 1.1;
+}
+.popup-linha {
+    display: flex; justify-content: space-between; align-items: baseline;
+    gap: 14px; font-size: 12.5px; margin: 4px 0; color: var(--tinta-suave);
+}
+.popup-linha b {
+    color: var(--tinta); font-weight: 600; font-variant-numeric: tabular-nums;
+}
+
+/* Nota sobre o raio de influencia */
+.nota-raio {
+    margin-top: 12px; font-size: 11.5px; line-height: 1.4;
+    color: var(--tinta-suave);
+}
+.nota-raio--exploratorio {
+    color: #8a5a00; background: #fff7e6;
+    border: 1px solid #f4d68a; border-radius: 8px; padding: 8px 10px;
+}
+
+/* Area de analise complementar */
+.area-analise {
+    background: var(--superficie);
+    border: 1px solid var(--linha);
+    border-radius: var(--raio);
+    box-shadow: var(--sombra);
+    padding: 16px 18px;
+}
+.area-analise h2 {
+    font-size: 13px; text-transform: uppercase; letter-spacing: .08em;
+    color: var(--tinta-suave); margin-bottom: 12px;
+}
+.analise-cabecalho {
+    display: flex; align-items: baseline; gap: 16px; margin-bottom: 12px;
+}
+.estacao-titulo { font-size: 14px; color: var(--tinta); }
+.estacao-titulo .sem-selecao { color: var(--tinta-suave); font-style: italic; }
+.estacao-meta { color: var(--tinta-suave); font-weight: 500; }
+.analise-graficos {
+    display: grid; grid-template-columns: 1.3fr 1.3fr 1fr; gap: 12px;
+}
+.grafico {
+    height: 240px;
+    border: 1px solid var(--linha); border-radius: 10px;
+    background: var(--fundo);
+}
+
+/* Bloco de comparacao entre estacoes de metro */
+.bloco-comparacao { display: flex; flex-direction: column; gap: 8px; }
+.dropdown-comparacao { font-size: 12px; }
+.grafico-comp {
+    flex: 1; min-height: 0;
+    border: 1px solid var(--linha); border-radius: 10px;
+    background: var(--fundo);
+}
+
+/* ----------------------------------------------------------------------- *
+ * Responsivo: a estrutura de tres colunas e a vista desktop dos storyboards.
+ * Abaixo de certos limites, aperta e depois empilha em vez de partir.
+ * ----------------------------------------------------------------------- */
+@media (max-width: 1280px) {
+    .corpo { grid-template-columns: 220px 1fr 280px; }
+    .analise-graficos { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 1024px) {
+    .app { height: auto; min-height: 100vh; }
+    .corpo { grid-template-columns: 1fr; }
+    .area-mapa { height: 60vh; min-height: 420px; }
+    .analise-graficos { grid-template-columns: 1fr; }
+}

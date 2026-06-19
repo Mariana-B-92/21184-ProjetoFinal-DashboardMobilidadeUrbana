@@ -1,9 +1,8 @@
 """
 Configuracao central do projeto.
 
-Reune todos os parametros externalizados do pipeline, em conformidade com o
-principio de "externalizacao de parametros" definido na seccao 2.4 do relatorio
-intermedio. Alterar valores aqui nao exige tocar no codigo do ETL nem dos KPIs.
+Reune os parametros do pipeline para alterar valores sem tocar no codigo do
+ETL nem dos KPIs.
 """
 
 from pathlib import Path
@@ -41,7 +40,7 @@ CRS_METRICO = "EPSG:3763"
 FUSO_HORARIO = "Europe/Lisbon"
 
 # ---------------------------------------------------------------------------
-# Parametros espaciais (Grupo 2 de indicadores)
+# Parametros espaciais (Grupo 2)
 # ---------------------------------------------------------------------------
 # Raio da area de influencia em torno de cada estacao de metro (metros).
 RAIO_INFLUENCIA_M = 500
@@ -51,21 +50,24 @@ RAIO_INFLUENCIA_M = 500
 DISTANCIA_MAX_TRUNCATURA_M = 1000
 
 # ---------------------------------------------------------------------------
-# Pesos do Indice de Intermodalidade Composto (IIC)
-# Devem somar 1. Parametrizaveis para a analise de sensibilidade da Fase 5.
+# Pesos do Indice de Intermodalidade Composto (IIC). Devem somar 1.
 # ---------------------------------------------------------------------------
 PESOS_IIC = {
     "proximidade": 0.40,
     "densidade": 0.35,
     "ciclavel": 0.25,
 }
+# Mesmos pesos como tupla (proximidade, densidade, ciclavel), para a UI (reset
+# dos seletores) e o recalculo do IIC nas figuras — fonte unica de verdade.
+PESOS_IIC_REF = (PESOS_IIC["proximidade"], PESOS_IIC["densidade"],
+                 PESOS_IIC["ciclavel"])
 
-# Valor neutro atribuido na normalizacao min-max quando max(x) == min(x),
-# evitando divisao por zero (caso-limite documentado nas metricas).
+# Valor neutro usado na normalizacao min-max quando max(x) == min(x), para
+# evitar divisao por zero.
 VALOR_NEUTRO_NORMALIZACAO = 0.5
 
 # ---------------------------------------------------------------------------
-# Filtros aplicados na limpeza (Etapa 2 do ETL)
+# Filtros aplicados na limpeza
 # ---------------------------------------------------------------------------
 # So sao contabilizados segmentos ciclaveis efetivamente executados.
 SITUACAO_CICLAVEL_VALIDA = "Executado"
@@ -73,14 +75,11 @@ SITUACAO_CICLAVEL_VALIDA = "Executado"
 SITUACAO_METRO_VALIDA = "Linha existente"
 
 # ---------------------------------------------------------------------------
-# Decisoes de tratamento de dados (configuraveis; ver relatorio de qualidade)
-# Cada escolha fica registada aqui e refletida no relatorio de qualidade,
-# de modo a ser justificavel no relatorio final.
+# Decisoes de tratamento de dados (configuraveis)
 # ---------------------------------------------------------------------------
 # Restringir o calculo de disponibilidade aos registos em estado "active"?
 # Apenas "active" representa oferta efetiva; os restantes estados (incluindo
-# "repair", que reflete indisponibilidade operacional) sao excluidos. O nome da
-# flag e mantido por coerencia com o relatorio.
+# "repair", indisponibilidade operacional) sao excluidos.
 EXCLUIR_ESTADO_REPAIR = True
 
 # Remover registos com numero de docas igual a zero?
@@ -122,3 +121,8 @@ def cor_classe(t, escala=None):
 # Partilhada pelas barras do grafico e pelos aneis de destaque no mapa, para
 # que a cor de cada estacao seja a mesma nos dois sitios.
 PALETA_COMPARACAO = ["#07733a", "#1f6fb2", "#d6322e", "#f4c20d"]
+
+# Identificadores das camadas do mapa, na ordem do controlo de visibilidade
+# (checklist e atalhos "todas/nenhuma"). Fonte unica para o layout e os
+# callbacks; usar list(...) ao devolver a um componente.
+CAMADAS_MAPA = ("gira", "metro", "ciclavel", "influencia")

@@ -1,15 +1,8 @@
-"""
-Aplicacao Dash - camada de apresentacao.
+"""Aplicacao Dash (camada de apresentacao): define o layout de pagina unica e
+instancia a app.
 
-Aplicacao de pagina unica, organizada nas cinco areas funcionais da seccao
-2.5.1: cabecalho, painel lateral de filtros, mapa interativo, painel de
-indicadores e area de analise complementar.
-
-O painel de indicadores (coluna direita) e CONTEXTUAL, como nos storyboards:
-mostra os KPIs globais sem selecao, os indicadores da estacao GIRA quando uma e
-escolhida (Storyboard 2) e os indicadores do Grupo 2 da estacao de metro quando
-e essa a selecao (Storyboard 3). As camadas do mapa sao controladas por
-checkboxes no painel lateral (Storyboard 1 / seccao 2.5.1 e 2.5.3).
+O painel de indicadores e os graficos sao contextuais — adaptam-se a selecao
+(GIRA, metro ou nenhuma); essa logica vive nos callbacks (app/callbacks.py).
 """
 
 import base64
@@ -60,6 +53,7 @@ _PONTO_GIRA = assign("""function(feature, latlng, context){
     let cor, raio, op, peso;
     if (h.categorico || !h.prop) {
         cor = h.cor_fixa || '#0a9a4a'; raio = 6; op = 0.9; peso = 1.5;
+        if (h.esbatido) { raio = 4; peso = 1; }
     } else {
         let v = feature.properties[h.prop];
         if (v === null || v === undefined) v = h.vmin;
@@ -73,7 +67,8 @@ _PONTO_GIRA = assign("""function(feature, latlng, context){
         raio = 8; op = 1.0; peso = 2;
     }
     const _m = L.circleMarker(latlng, {radius: raio, color: '#ffffff', weight: peso,
-        fillColor: cor, fillOpacity: op, pane: 'p-gira'});
+        fillColor: cor, fillOpacity: op, interactive: !h.esbatido,
+        pane: h.esbatido ? 'p-contexto' : 'p-gira'});
     try { (window._giraLayers = window._giraLayers || {})[feature.properties.id_estacao] = _m; } catch (e) {}
     return _m;
 }""")
@@ -87,6 +82,8 @@ _PONTO_METRO = assign("""function(feature, latlng, context){
     if (h.categorico) {
         // Vista inicial: igual a GIRA (so muda a cor), para coerencia estetica.
         cor = h.cor_fixa; raio = 6; op = 0.9; peso = 1.5;
+        if (h.esbatido) { raio = 4; peso = 1; }
+        else if (h.destaque) { raio = 8; op = 1.0; peso = 2; }  // foco na comparacao
     } else {
         let v = feature.properties[h.prop];
         if (v === null || v === undefined) v = h.vmin;
@@ -101,7 +98,8 @@ _PONTO_METRO = assign("""function(feature, latlng, context){
         raio = 8; op = 1.0; peso = 2;
     }
     const _m = L.circleMarker(latlng, {radius: raio, color: '#ffffff', weight: peso,
-        fillColor: cor, fillOpacity: op, pane: 'p-metro'});
+        fillColor: cor, fillOpacity: op, interactive: !h.esbatido,
+        pane: h.esbatido ? 'p-contexto' : 'p-metro'});
     try { (window._metroLayers = window._metroLayers || {})[feature.properties.id_metro] = _m; } catch (e) {}
     return _m;
 }""")
@@ -182,6 +180,18 @@ def camada_ciclavel():
     )
 
 
+# Icone "camadas" (estilo Feather) para o controlo recolhido sobre o mapa.
+_ICONE_CAMADAS = (
+    "data:image/svg+xml;utf8,"
+    "<svg xmlns='http://www.w3.org/2000/svg' width='20' height='20' "
+    "viewBox='0 0 24 24' fill='none' stroke='%23277452' stroke-width='2' "
+    "stroke-linecap='round' stroke-linejoin='round'>"
+    "<polygon points='12 2 2 7 12 12 22 7 12 2'/>"
+    "<polyline points='2 17 12 22 22 17'/>"
+    "<polyline points='2 12 12 17 22 12'/></svg>"
+)
+
+
 def mapa():
     return dl.Map(
         id="mapa",
@@ -205,6 +215,10 @@ def mapa():
                     children=[dl.LayerGroup(id="camada-comparacao")]),
             dl.Pane(name="p-ciclavel", id="pane-ciclavel",
                     style={"zIndex": 360}, children=[camada_ciclavel()]),
+            # Pane do tipo NAO-ativo (esbatido): abaixo dos marcadores base, para
+            # o tipo em analise ficar sempre por cima. Sem filhos — os marcadores
+            # da camada GIRA/metro entram aqui dinamicamente quando esbatidos.
+            dl.Pane(name="p-contexto", id="pane-contexto", style={"zIndex": 400}),
             dl.Pane(name="p-gira", id="pane-gira", style={"zIndex": 410},
                     children=[camada_gira()]),
             dl.Pane(name="p-metro", id="pane-metro", style={"zIndex": 420},
@@ -252,9 +266,18 @@ def serve_layout():
     dcc.Store(id="_popup-sink"),
     # Sumidouro do callback clientside que fecha o "Sobre" (Esc / clique fora).
     dcc.Store(id="_sobre-sink"),
+    # Sumidouro do callback clientside que redimensiona os sliders dos pesos
+    # quando a seccao colapsavel e aberta.
+    dcc.Store(id="_pesos-sink"),
+    # Estado da area de analise. 'analise-modo': 'analise' (conteudo contextual)
+    # ou 'comparar' (ferramenta de comparacao). 'analise-vista': 'intro' (empty
+    # state) ou 'graficos'. Juntos decidem o que se mostra em baixo.
+    dcc.Store(id="analise-modo", data="analise"),
+    dcc.Store(id="analise-vista", data="intro"),
+    # Sumidouro do JS que realça a zona-alvo ao passar o rato num cartao da intro.
+    dcc.Store(id="_acoes-sink"),
 
-    # 1. Cabecalho (marca + titulo + "Sobre"), no tom azul-marinho dos
-    # storyboards.
+    # 1. Cabecalho (marca + titulo + "Sobre").
     html.Header(className="cabecalho", children=[
         html.Img(src=_MARCA_URI, className="cabecalho-marca",
                  alt="Bicicleta e metro"),
@@ -263,8 +286,13 @@ def serve_layout():
             html.P("Análise da articulação entre o sistema GIRA, "
                    "a rede ciclável e o metro"),
         ]),
-        html.Button("Sobre", id="abrir-sobre", n_clicks=0,
-                    className="cabecalho-sobre"),
+        html.Div(className="cabecalho-acoes", children=[
+            html.Button("Início", id="btn-home", n_clicks=0,
+                        className="cabecalho-btn",
+                        title="Voltar à vista inicial (limpa estação e indicador)"),
+            html.Button("Sobre", id="abrir-sobre", n_clicks=0,
+                        className="cabecalho-btn"),
+        ]),
     ]),
 
     html.Div(className="corpo", children=[
@@ -274,10 +302,10 @@ def serve_layout():
             html.Label("Localizar estação"),
             dcc.Dropdown(id="sel-gira-nome", options=_OPCOES_GIRA, value=None,
                          placeholder="Estação GIRA…",
-                         className="dropdown-localizar"),
+                         className="dropdown-localizar dropdown-localizar-gira"),
             dcc.Dropdown(id="sel-metro-nome", options=_OPCOES_METRO, value=None,
                          placeholder="Estação de metro…",
-                         className="dropdown-localizar",
+                         className="dropdown-localizar dropdown-localizar-metro",
                          style={"marginTop": "6px"}),
             html.Label("Período de análise"),
             dcc.DatePickerRange(id="filtro-periodo", display_format="YYYY-MM-DD",
@@ -291,64 +319,62 @@ def serve_layout():
             html.Label("Indicador no mapa"),
             dcc.Dropdown(id="filtro-indicador", clearable=True, value=None,
                          placeholder="Escolha um indicador",
+                         # Memoriza a escolha na sessao: se a pagina recarregar
+                         # (ex.: ao mover a janela para outro monitor), a selecao
+                         # e reposta e o mapa volta a colorir-se sozinho.
+                         persistence=True, persistence_type="session",
                          options=[
                              {"label": "Metro · IIC (intermodalidade)",
                               "value": "iic"},
                              {"label": "Metro · N.º de estações GIRA",
                               "value": "n_gira_influencia"},
-                             {"label": "Metro · Distância à GIRA mais próxima",
-                              "value": "dist_gira_min_m"},
                              {"label": "Metro · Rede ciclável na área",
                               "value": "comp_ciclavel_m"},
                              {"label": "Metro · Disp. nas horas de pico",
                               "value": "disp_pico"},
-                             {"label": "GIRA · Taxa média de disponibilidade",
-                              "value": "taxa_media_disponibilidade"},
-                             {"label": "GIRA · Disp. média (bicicletas)",
+                             {"label": "GIRA · Disponibilidade média (bicicletas)",
                               "value": "disponibilidade_media"},
                              {"label": "GIRA · Variabilidade diária (IVD)",
                               "value": "indice_variabilidade_diaria"},
                          ]),
-            html.Label("Camadas do mapa"),
-            dcc.Checklist(
-                id="filtro-camadas", className="lista-camadas",
-                options=[
-                    {"label": "Estações GIRA", "value": "gira"},
-                    {"label": "Estações de metro", "value": "metro"},
-                    {"label": "Rede ciclável", "value": "ciclavel"},
-                    {"label": "Área de influência", "value": "influencia"},
-                ],
-                value=["gira", "metro", "ciclavel", "influencia"]),
-            html.Label("Pesos do IIC — ranking"),
-            html.P("Afetam apenas o ranking de IIC (análise de sensibilidade). "
-                   "O IIC de referência (0,40 / 0,35 / 0,25) mantém-se no mapa, "
-                   "no medidor e na comparação.",
-                   className="filtro-ajuda"),
-            html.Div(className="pesos-iic", children=[
-                html.Span("Proximidade", className="peso-rotulo"),
-                dcc.Slider(id="peso-prox", min=0, max=1, step=0.05, value=0.40,
-                           marks=None,
-                           tooltip={"placement": "bottom",
-                                    "always_visible": True}),
-                html.Span("Densidade GIRA", className="peso-rotulo"),
-                dcc.Slider(id="peso-dens", min=0, max=1, step=0.05, value=0.35,
-                           marks=None,
-                           tooltip={"placement": "bottom",
-                                    "always_visible": True}),
-                html.Span("Rede ciclável", className="peso-rotulo"),
-                dcc.Slider(id="peso-cicl", min=0, max=1, step=0.05, value=0.25,
-                           marks=None,
-                           tooltip={"placement": "bottom",
-                                    "always_visible": True}),
-            ]),
             html.Button("Limpar filtros", id="limpar-filtros", n_clicks=0,
                         className="btn-limpar"),
         ]),
 
-        # 3. Mapa interativo (elemento central) + legenda discreta sobreposta
+        # 3. Mapa interativo (elemento central) + overlays sobrepostos:
+        #    controlo de camadas (topo-direito, convencao Leaflet) e legenda
+        #    (baixo-direita). Sao divs irmaos do mapa, por isso clicar neles nao
+        #    desseleciona estacoes.
         html.Main(className="area-mapa", children=[
             html.Div(id="mapa-camadas", className="mapa-camadas",
                      children=[mapa()]),
+            # Controlo de camadas no proprio mapa (canto), onde as ferramentas
+            # de mapas convencionalmente o poem. Saiu do painel de filtros, que
+            # fica so com filtros de dados.
+            html.Div(id="controlo-camadas", className="controlo-camadas",
+                     children=[
+                # Recolhido (so o icone) por omissao; expande ao passar o rato,
+                # a maneira do controlo de camadas nativo do Leaflet
+                html.Img(src=_ICONE_CAMADAS, className="controlo-camadas-icone",
+                         alt="Camadas"),
+                html.Div(className="controlo-camadas-conteudo", children=[
+                    html.Div("Camadas", className="controlo-camadas-titulo"),
+                    html.Div(className="camadas-atalho", children=[
+                        html.Button("Todas", id="camadas-todas", n_clicks=0),
+                        html.Button("Nenhuma", id="camadas-nenhuma", n_clicks=0),
+                    ]),
+                    dcc.Checklist(
+                        id="filtro-camadas", className="lista-camadas",
+                        persistence=True, persistence_type="session",
+                        options=[
+                            {"label": "Estações GIRA", "value": "gira"},
+                            {"label": "Estações de metro", "value": "metro"},
+                            {"label": "Rede ciclável", "value": "ciclavel"},
+                            {"label": "Área de influência", "value": "influencia"},
+                        ],
+                        value=list(config.CAMADAS_MAPA)),
+                ]),
+            ]),
             html.Div(id="legenda", className="legenda-mapa"),
         ]),
 
@@ -359,22 +385,146 @@ def serve_layout():
         ]),
     ]),
 
-    # 5. Area de analise complementar
-    html.Footer(className="area-analise", children=[
+    # 5. Area de analise complementar. A className (modo-* / vista-*) e gerida
+    # por callback e decide, via CSS, o que fica visivel — incluindo o titulo da
+    # seccao, que acompanha o estado.
+    html.Footer(id="area-analise",
+                className="area-analise modo-analise vista-intro", children=[
         html.Div(className="analise-cabecalho", children=[
-            html.H2("Análise complementar"),
+            html.H2("Para começar", id="analise-seccao-titulo"),
             html.Div(id="estacao-titulo", className="estacao-titulo"),
+            # Porta de entrada (sempre visivel) da comparacao, para a manter
+            # descobrivel sem ter o painel de comparacao montado o tempo todo.
+            html.Button("Comparar estações de metro", id="btn-comparar",
+                        n_clicks=0, className="btn-comparar"),
         ]),
-        html.Div(className="analise-graficos", children=[
-            dcc.Graph(id="grafico-serie", className="grafico",
-                      config={"displayModeBar": False}),
-            # Slot contextual: heatmap horario (GIRA) OU distribuicao das GIRA na
-            # area de influencia (metro), conforme a selecao (Storyboards 2 e 3).
-            dcc.Graph(id="grafico-heatmap", className="grafico",
-                      config={"displayModeBar": False}),
+        # Corpo contextual (os blocos abaixo sao mostrados/escondidos por CSS).
+        html.Div(className="analise-corpo", children=[
+            # (a) Empty state / onboarding — vista inicial, sem seleção.
+            html.Div(className="analise-intro", children=[
+                html.H3("Intermodalidade bicicleta–metro em Lisboa"),
+                html.P(["Este painel cruza as bicicletas partilhadas ",
+                        html.Strong("GIRA"), ", a ",
+                        html.Strong("rede ciclável"), " e o ",
+                        html.Strong("metro"), " para mostrar onde a ligação "
+                        "entre bicicleta e metro é mais forte ou mais fraca. O ",
+                        html.Strong("Índice de Intermodalidade Composto"),
+                        " (IIC, 0–1) resume esse potencial em cada estação de "
+                        "metro."]),
+                # Cada cartao aponta (data-alvo) para o controlo real onde a acao
+                # se faz; ao passar o rato, esse controlo fica realcado (ver JS).
+                html.Div(className="analise-intro-acoes", children=[
+                    html.Div(className="acao",
+                             **{"data-alvo": ".area-mapa, .dropdown-localizar"},
+                             children=[
+                        html.Strong("Explorar uma estação"),
+                        html.Span(["Clique numa estação no mapa, ou use ",
+                                   html.Em("«Localizar estação»"),
+                                   " nos filtros, para ver aqui a sua "
+                                   "disponibilidade e indicadores."])]),
+                    html.Div(className="acao",
+                             **{"data-alvo": "#filtro-indicador"}, children=[
+                        html.Strong("Ver um indicador"),
+                        html.Span(["Escolha um indicador em ",
+                                   html.Em("«Indicador no mapa»"),
+                                   " para refletir o seu valor nas cores do "
+                                   "mapa."])]),
+                    html.Div(className="acao", **{"data-alvo": "#btn-comparar"},
+                             children=[
+                        html.Strong("Comparar estações"),
+                        html.Span(["Use ", html.Em("«Comparar estações de "
+                                   "metro»"), ", aqui em cima, para confrontar "
+                                   "duas estações de metro."])]),
+                ]),
+            ]),
+            # (b) Graficos contextuais — com seleção ou com o indicador IIC.
+            html.Div(className="analise-graficos", children=[
+                dcc.Graph(id="grafico-serie", className="grafico",
+                          responsive=True,
+                          config={"displayModeBar": False, "responsive": True}),
+                # Slot contextual: heatmap horario (GIRA) / distribuicao das GIRA
+                # (metro) / ranking de IIC (indicador IIC).
+                dcc.Graph(id="grafico-heatmap", className="grafico",
+                          responsive=True,
+                          config={"displayModeBar": False, "responsive": True}),
+                # Dica ao lado do ranking (so visivel na vista de um grafico, ex.
+                # indicador IIC): liga a visao geral ao detalhe — visao geral
+                # primeiro, detalhe a pedido. O data-alvo realca o mapa e o
+                # localizador de metro ao passar o rato (mesmo mecanismo dos
+                # cartoes da introducao).
+                html.Div(className="analise-dica", id="dica-geral",
+                         **{"data-alvo": ".area-mapa, .dropdown-localizar-metro"},
+                         children=[
+                    html.Div("Ver uma estação em detalhe",
+                             className="analise-dica-titulo"),
+                    html.P(["As estações estão ordenadas por este indicador. "
+                            "Para ver o detalhe de uma delas, ",
+                            html.Strong("clique nessa estação no mapa"),
+                            " ou procure-a em ",
+                            html.Strong("«Localizar estação»"), "."]),
+                ]),
+                # Pesos do IIC, ao LADO do ranking (so na vista do indicador IIC).
+                # Ficam colados ao grafico que afetam. So recalculam este ranking; 
+                # o IIC oficial(0,40 / 0,35 / 0,25) mantem-se no mapa, no medidor 
+                # e no detalhe.
+                # Coluna 2: painel de PESOS, que estica para a altura do grafico
+                # (os sliders distribuem-se por flexbox nesse espaco).
+                html.Div(className="analise-pesos", children=[
+                    html.Div("Pesos do IIC (ranking)",
+                             className="analise-pesos-titulo"),
+                    html.P("Só afetam este ranking; o IIC oficial "
+                           "mantém-se no mapa e no detalhe.",
+                           className="analise-pesos-nota"),
+                    html.Div(className="pesos-iic", children=[
+                        html.Div(className="peso-bloco", children=[
+                            html.Div(className="peso-linha", children=[
+                                html.Span("Proximidade", className="peso-rotulo"),
+                                html.Span("0,40", id="val-prox",
+                                          className="peso-valor"),
+                            ]),
+                            dcc.Slider(id="peso-prox", min=0, max=1, step=0.05,
+                                       value=0.40, marks=None, tooltip=None),
+                        ]),
+                        html.Div(className="peso-bloco", children=[
+                            html.Div(className="peso-linha", children=[
+                                html.Span("Densidade GIRA",
+                                          className="peso-rotulo"),
+                                html.Span("0,35", id="val-dens",
+                                          className="peso-valor"),
+                            ]),
+                            dcc.Slider(id="peso-dens", min=0, max=1, step=0.05,
+                                       value=0.35, marks=None, tooltip=None),
+                        ]),
+                        html.Div(className="peso-bloco", children=[
+                            html.Div(className="peso-linha", children=[
+                                html.Span("Rede ciclável", className="peso-rotulo"),
+                                html.Span("0,25", id="val-cicl",
+                                          className="peso-valor"),
+                            ]),
+                            dcc.Slider(id="peso-cicl", min=0, max=1, step=0.05,
+                                       value=0.25, marks=None, tooltip=None),
+                        ]),
+                    ]),
+                ]),
+                # Coluna 3: a dica, num painel estreito a direita — tal como na
+                # vista de disponibilidade media (3 colunas). Liga a visao geral
+                # ao detalhe (clicar numa estacao).
+                html.Div(className="analise-dica analise-dica-mini",
+                         **{"data-alvo": ".area-mapa, .dropdown-localizar-metro"},
+                         children=[
+                    html.Div("Ver uma estação em detalhe",
+                             className="analise-dica-titulo"),
+                    html.P(["Para o detalhe de uma estação, ",
+                            html.Strong("clique nela no mapa"),
+                            " ou procure-a em ",
+                            html.Strong("«Localizar estação»"), "."]),
+                ]),
+            ]),
+            # (c) Ferramenta de comparacao — modo "comparar" (full width).
             html.Div(className="bloco-comparacao", children=[
-                html.Div(style={"display": "flex", "gap": "8px",
-                                "alignItems": "center"}, children=[
+                html.Div("Escolha duas estações de metro para confrontar o IIC "
+                         "e as suas componentes:", className="comp-titulo"),
+                html.Div(className="comp-seletores", children=[
                     dcc.Dropdown(
                         id="filtro-comp-a", options=_OPCOES_METRO,
                         value=_COMPARACAO_INICIAL[0], clearable=False,
@@ -388,13 +538,17 @@ def serve_layout():
                         value=_COMPARACAO_INICIAL[1], clearable=False,
                         className="dropdown-comparacao",
                         style={"flex": "1", "minWidth": "0"}),
+                    dcc.Checklist(
+                        id="comp-no-mapa",
+                        options=[{"label": "Localizar no mapa", "value": "on"}],
+                        value=[], className="check-mapa"),
                 ]),
-                dcc.Checklist(
-                    id="comp-no-mapa",
-                    options=[{"label": "Localizar no mapa", "value": "on"}],
-                    value=[], className="check-mapa"),
-                dcc.Graph(id="grafico-comparacao", className="grafico-comp",
-                          config={"displayModeBar": False}),
+                html.Div(className="comp-grafico-wrap", children=[
+                    dcc.Graph(id="grafico-comparacao", className="grafico-comp",
+                              responsive=True,
+                              config={"displayModeBar": False,
+                                      "responsive": True}),
+                ]),
             ]),
         ]),
     ]),
@@ -421,6 +575,11 @@ def serve_layout():
                    "estações GIRA na área de influência (0,35) e comprimento "
                    "de rede ciclável na área (0,25). Valores próximos de 1 "
                    "indicam maior potencial intermodal."),
+            html.H3("Projeto"),
+            html.P("Protótipo académico, para fins de demonstração e avaliação, "
+                   "desenvolvido na unidade curricular de Projeto de Engenharia "
+                   "Informática (Licenciatura em Engenharia Informática, "
+                   "Universidade Aberta), no ano letivo 2025/2026."),
         ]),
     ]),
 ])

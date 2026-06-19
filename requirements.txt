@@ -10,7 +10,7 @@ geopandas>=1.0
 shapely>=2.0
 pyproj>=3.6
 
-# --- Dashboard (Fase 4) ---
+# --- Dashboard ---
 dash>=2.17
 plotly>=5.22
 dash-leaflet>=1.0

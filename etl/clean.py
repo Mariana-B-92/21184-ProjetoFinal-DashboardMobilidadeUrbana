@@ -1,21 +1,8 @@
-"""
-ETL - Etapa 2: Limpeza e normalizacao.
+"""Limpeza e normalizacao dos dados: parsing de id/coordenadas/timestamps,
+remocao de duplicados e valores em falta, e filtragem por estado/situacao.
 
-Resolve os problemas de qualidade identificados na seccao 2.3.1 e uniformiza a
-estrutura dos dados:
-- parsing do identificador de estacao (embebido em 'desigcomercial');
-- parsing das coordenadas (embebidas em 'position' como GeoJSON string);
-- conversao dos timestamps de UTC para hora local (Europe/Lisbon);
-- remocao de duplicados e tratamento de valores em falta;
-- filtragem dos registos relevantes (estado, situacao de execucao/funcionamento).
-
-Cada operacao alimenta um dicionario de qualidade, base do relatorio gerado na
-Etapa 5. As decisoes de tratamento sao controladas por config.py.
-
-Nota: o calculo da taxa de ocupacao instantanea pertence a Etapa 4 (variaveis
-derivadas), pelo que NAO e feito aqui; apenas se contabilizam, para o relatorio,
-os registos com numbicicletas > numdocas.
-"""
+As decisoes de tratamento sao controladas por config.py. Cada operacao regista
+metricas num dicionario de qualidade."""
 
 import pandas as pd
 
@@ -36,7 +23,7 @@ def limpar_historico_gira(historico):
 
     df = historico.copy()
 
-    # --- Parsing do identificador de estacao (prefixo numerico) ---
+    # Identificador da estacao = prefixo numerico de 'desigcomercial'.
     # ex.: "417 - Av. Duque de Avila / Jardim Arco Do Cego" -> 417
     df["id_estacao"] = (
         df["desigcomercial"].str.extract(r"^\s*(\d+)", expand=False)
@@ -45,13 +32,13 @@ def limpar_historico_gira(historico):
     _registar(q, "registos_sem_id_estacao", sem_id)
     df = df.dropna(subset=["id_estacao"])
     df["id_estacao"] = df["id_estacao"].astype("int32")
-    # Designacao "limpa" sem o prefixo numerico, para apresentacao.
+    # Nome sem o prefixo numerico, para apresentacao.
     df["nome_estacao"] = (
         df["desigcomercial"].str.replace(r"^\s*\d+\s*-\s*", "", regex=True)
         .str.strip()
     )
 
-    # --- Parsing das coordenadas embebidas no campo 'position' ---
+    # Coordenadas embebidas em 'position' (string tipo GeoJSON).
     coords = df["position"].str.extract(
         r"\[\s*(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)\s*\]"
     )
@@ -61,7 +48,7 @@ def limpar_historico_gira(historico):
     _registar(q, "registos_sem_coordenadas", sem_coords)
     df = df.dropna(subset=["longitude", "latitude"])
 
-    # --- Conversao de timestamps UTC -> hora local ---
+    # Timestamps de origem em UTC, convertidos para hora local.
     ts = pd.to_datetime(df["entity_ts"], utc=True, errors="coerce")
     sem_ts = int(ts.isna().sum())
     _registar(q, "registos_sem_timestamp", sem_ts)
@@ -72,28 +59,25 @@ def limpar_historico_gira(historico):
     df["hora"] = df["timestamp"].dt.hour
     df["dia_semana"] = df["timestamp"].dt.dayofweek  # 0=segunda ... 6=domingo
 
-    # --- Valores em falta nos campos de disponibilidade ---
     nulos_disp = int(df[["numbicicletas", "numdocas"]].isna().any(axis=1).sum())
     _registar(q, "registos_com_disponibilidade_nula", nulos_disp)
     df = df.dropna(subset=["numbicicletas", "numdocas"])
     df["numbicicletas"] = df["numbicicletas"].astype("int32")
     df["numdocas"] = df["numdocas"].astype("int32")
 
-    # --- Remocao de duplicados ---
     antes = len(df)
     df = df.drop_duplicates(subset=["id_estacao", "timestamp"])
     _registar(q, "duplicados_removidos", int(antes - len(df)))
 
-    # --- Anomalia: numbicicletas > numdocas (TMD sairia de [0,1]) ---
-    # Apenas contabilizado aqui; o clamp efetivo ocorre na Etapa 4 / KPIs.
+    # Anomalia numbicicletas > numdocas (taxa de ocupacao sairia de [0,1]):
+    # apenas contabilizada aqui; o clamp efetivo ocorre nas variaveis derivadas.
     _registar(q, "registos_bicicletas_superior_docas",
               int((df["numbicicletas"] > df["numdocas"]).sum()))
 
-    # --- Distribuicao de estados (antes de filtrar) ---
+    # Distribuicao de estados antes de aplicar o filtro.
     _registar(q, "distribuicao_estado",
               {str(k): int(v) for k, v in df["estado"].value_counts().items()})
 
-    # --- Filtro: manter so o estado "active" (configuravel) ---
     # So "active" e oferta efetiva; todos os outros estados (incluindo "repair")
     # sao removidos. O contador agrega esses registos nao-active removidos.
     if config.EXCLUIR_ESTADO_REPAIR:
@@ -103,7 +87,7 @@ def limpar_historico_gira(historico):
     else:
         _registar(q, "registos_repair_removidos", 0)
 
-    # --- Filtro: docas == 0 (configuravel; evita divisao por zero no TMD) ---
+    # Remove docas == 0 para evitar divisao por zero na taxa de ocupacao.
     if config.REMOVER_DOCAS_ZERO:
         antes = len(df)
         df = df[df["numdocas"] > 0]
@@ -111,7 +95,6 @@ def limpar_historico_gira(historico):
     else:
         _registar(q, "registos_docas_zero_removidos", 0)
 
-    # --- Resumo final ---
     _registar(q, "registos_finais", int(len(df)))
     _registar(q, "n_estacoes_distintas", int(df["id_estacao"].nunique()))
     _registar(q, "intervalo_temporal", {

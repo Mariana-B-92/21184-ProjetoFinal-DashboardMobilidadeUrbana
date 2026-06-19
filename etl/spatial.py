@@ -1,26 +1,6 @@
-"""
-ETL - Etapa 3: Integracao espacial.
-
-Com vista ao calculo dos indicadores de cobertura (Grupo 2), esta etapa:
-- materializa a entidade base EstacaoGIRA (pontos unicos a partir do historico);
-- reprojeta os dados geograficos para um CRS metrico (EPSG:3763), permitindo
-  operacoes de distancia em metros;
-- cria a area de influencia (buffer de raio R) em torno de cada estacao de metro;
-- calcula, por estacao de metro, as distancias e contagens necessarias aos
-  indicadores de cobertura.
-
-Implementacao fiel ao documento das metricas:
-- d_min(j): distancia minima a qualquer estacao GIRA (sobre todo o conjunto G);
-- N_GIRA(j): numero de estacoes GIRA com dist(j,i) <= R;
-- L_ciclavel(j): SOMA dos comprimentos das PORCOES de segmento contidas no buffer
-  (intersecao geometrica segmento ∩ A_j(R)), evitando a sobrestimacao que
-  resultaria de somar comprimentos totais de segmentos que apenas intersetam
-  parcialmente a area de influencia.
-
-A disponibilidade media nas horas de pico (disp_pico) NAO e calculada aqui:
-depende da hora de pico individual (Grupo 1). Esta etapa devolve, para esse
-efeito, a pertenca de cada estacao GIRA ao buffer de cada estacao de metro.
-"""
+"""Integracao espacial: materializa a entidade EstacaoGIRA, reprojeta para CRS
+metrico e calcula, por estacao de metro, distancia minima a GIRA, contagem de
+estacoes GIRA no buffer de raio R e comprimento ciclavel contido nesse buffer."""
 
 import geopandas as gpd
 
@@ -28,11 +8,11 @@ import config
 
 
 def construir_estacoes_gira(historico_limpo):
-    """Materializa a entidade base EstacaoGIRA a partir do historico limpo.
+    """Materializa a entidade EstacaoGIRA (pontos unicos) a partir do historico.
 
     Coordenada representativa = mediana por estacao (robusta a ruido de GPS).
     Capacidade (total de docas) = maximo de docas observado por estacao.
-    Retorna um GeoDataFrame de pontos em EPSG:4326.
+    Retorna um GeoDataFrame de pontos em CRS geografico.
     """
     agreg = historico_limpo.groupby("id_estacao").agg(
         nome_estacao=("nome_estacao", "first"),
@@ -55,9 +35,8 @@ def integracao_espacial(estacoes_gira, metro_limpo, ciclavel_limpo,
     Retorna (gdf_cobertura, pertenca):
     - gdf_cobertura: GeoDataFrame (uma linha por estacao de metro) com
       dist_gira_min_m, n_gira_influencia e comp_ciclavel_m, mais a geometria
-      do ponto e do buffer (ambas em EPSG:4326, para o mapa e persistencia WKT);
-    - pertenca: dict {id_metro: [id_estacao GIRA dentro do buffer]}, necessario
-      ao calculo posterior da disponibilidade nas horas de pico.
+      do ponto e do buffer (ambas em CRS geografico, para mapa e persistencia WKT);
+    - pertenca: dict {id_metro: [id_estacao GIRA dentro do buffer]}.
     """
     raio = raio if raio is not None else config.RAIO_INFLUENCIA_M
 
@@ -77,7 +56,6 @@ def integracao_espacial(estacoes_gira, metro_limpo, ciclavel_limpo,
         ponto = metro.geometry
         buffer_geom = ponto.buffer(raio)
 
-        # Distancias do ponto de metro a todas as estacoes GIRA (conjunto G).
         distancias = gira_m.geometry.distance(ponto)
 
         dist_min = float(distancias.min())
@@ -85,7 +63,8 @@ def integracao_espacial(estacoes_gira, metro_limpo, ciclavel_limpo,
         n_gira = int(dentro.sum())
         ids_dentro = [int(x) for x in gira_ids[dentro.to_numpy()]]
 
-        # Comprimento ciclavel = soma das PORCOES contidas no buffer (intersecao).
+        # Soma so as porcoes contidas no buffer (intersecao), evitando
+        # sobrestimar com segmentos que apenas o intersetam parcialmente.
         intersecao = geom_ciclavel.intersection(buffer_geom)
         comp_ciclavel = float(intersecao.length.sum())
 

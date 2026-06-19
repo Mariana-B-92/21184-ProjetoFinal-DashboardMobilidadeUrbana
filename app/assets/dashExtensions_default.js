@@ -8,6 +8,7 @@ window.dashExtensions = Object.assign({}, window.dashExtensions, {
                 raio = 6;
                 op = 0.9;
                 peso = 1.5;
+                if (h.esbatido) { raio = 4; peso = 1; }
             } else {
                 let v = feature.properties[h.prop];
                 if (v === null || v === undefined) v = h.vmin;
@@ -28,7 +29,8 @@ window.dashExtensions = Object.assign({}, window.dashExtensions, {
                 weight: peso,
                 fillColor: cor,
                 fillOpacity: op,
-                pane: 'p-gira'
+                interactive: !h.esbatido,
+                pane: h.esbatido ? 'p-contexto' : 'p-gira'
             });
             try { (window._giraLayers = window._giraLayers || {})[feature.properties.id_estacao] = _m; } catch (e) {}
             return _m;
@@ -41,6 +43,8 @@ window.dashExtensions = Object.assign({}, window.dashExtensions, {
                 raio = 6;
                 op = 0.9;
                 peso = 1.5;
+                if (h.esbatido) { raio = 4; peso = 1; }
+                else if (h.destaque) { raio = 8; op = 1.0; peso = 2; }
             } else {
                 let v = feature.properties[h.prop];
                 if (v === null || v === undefined) v = h.vmin;
@@ -61,7 +65,8 @@ window.dashExtensions = Object.assign({}, window.dashExtensions, {
                 weight: peso,
                 fillColor: cor,
                 fillOpacity: op,
-                pane: 'p-metro'
+                interactive: !h.esbatido,
+                pane: h.esbatido ? 'p-contexto' : 'p-metro'
             });
             try { (window._metroLayers = window._metroLayers || {})[feature.properties.id_metro] = _m; } catch (e) {}
             return _m;

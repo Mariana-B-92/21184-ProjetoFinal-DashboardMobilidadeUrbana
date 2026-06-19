@@ -1,18 +1,8 @@
-"""
-ETL - Etapa 5: Carregamento.
+"""Persiste o modelo integrado em SQLite, com as geometrias em WKT (WGS84).
 
-Persiste o modelo de dados integrado numa base de dados SQLite local, com as
-geometrias armazenadas em formato WKT (WGS84), em conformidade com a seccao 2.4
-do relatorio. Recebe os indicadores ja calculados pelo modulo kpis/ (esta etapa
-nao computa indicadores, apenas persiste).
-
-Esquema (Tabela 5 do relatorio) - 4 entidades base + 2 de indicadores:
-  EstacaoGIRA               - pontual
-  DisponibilidadeGIRA       - temporal/pontual (~1.99 M registos)
-  EstacaoMetro              - pontual
-  RedeCiclavel              - linear
-  IndicadorDisponibilidadeGIRA - tabular (Grupo 1)
-  IndicadorCoberturaMetro      - tabular (Grupo 2 + IIC)
+Recebe os indicadores ja calculados (kpis/) e apenas os persiste. Entidades:
+  EstacaoGIRA, DisponibilidadeGIRA (~1.99 M registos), EstacaoMetro,
+  RedeCiclavel e as duas tabelas de indicadores (GIRA e cobertura de metro).
 """
 
 import sqlite3

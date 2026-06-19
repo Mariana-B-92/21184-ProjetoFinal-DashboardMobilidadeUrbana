@@ -27,6 +27,7 @@ resultados num *dashboard* cartográfico.
 - [Publicação (Hugging Face Spaces)](#publicação-hugging-face-spaces)
 - [Configuração](#configuração)
 - [Fontes de dados](#fontes-de-dados)
+- [Autoria](#autoria)
 
 ## Visão geral
 
@@ -74,7 +75,7 @@ de estações e conectividade ciclável num valor sintético entre 0 e 1.
 ## Estrutura do projeto
 
 ```
-mobilidade-lisboa/
+Dashboard-MobilidadeUrbana-ProjetoFinal-LEI/
 ├── config.py              # Parâmetros externalizados (raios, pesos, CRS, filtros, paleta)
 ├── construir_modelo.py    # Orquestrador da fase offline (ETL + KPIs + carregamento)
 ├── iniciar_dashboard.py   # Lançador simples (arranca o servidor e abre o navegador)
@@ -110,7 +111,6 @@ mobilidade-lisboa/
 │
 ├── tests/                 # Testes (unitários, sistema, desempenho, escalabilidade)
 ├── scripts/               # Utilitários (extração dos dados de origem)
-├── notebooks/             # Análise exploratória
 ├── reports/               # Relatório de qualidade dos dados
 │
 └── deploy-huggingface/   # Clone de deploy do HuggingFace Space
@@ -210,6 +210,12 @@ Fluxo típico após alterar o código ou reconstruir o modelo:
 2. `.\sincronizar_deploy.ps1 -Push -Mensagem "..."`;
 3. O Hugging Face reconstrói a imagem Docker e republica automaticamente.
 
+> **Nota — JavaScript do mapa.** As funções dos marcadores (definidas com
+> `assign()` em `app/app.py`) correm a partir do ficheiro **gerado**
+> `app/assets/dashExtensions_default.js`, que não se regenera automaticamente. Ao
+> alterar essa lógica JavaScript, é preciso atualizar também esse ficheiro antes
+> de sincronizar; caso contrário, o Space mantém o comportamento anterior.
+
 ## Configuração
 
 Os parâmetros do sistema estão centralizados em `config.py` e podem ser
@@ -230,3 +236,22 @@ Todos os dados provêm da plataforma Lisboa Aberta:
 A qualidade e a cobertura dos dados abertos não são controladas pela equipa; as
 limitações identificadas durante o processamento são registadas no relatório de
 qualidade gerado pelo pipeline.
+
+## Autoria
+
+Protótipo de *dashboard* para análise de dados de mobilidade urbana, desenvolvido
+no âmbito da unidade curricular de **Projeto de Engenharia Informática**, da
+Licenciatura em Engenharia Informática da **Universidade Aberta**.
+
+**Autoras**
+
+- Ana Filipa Ramos de Oliveira — 2200079
+- Mariana Cavaco Barrote — 2200640
+
+**Orientador**
+
+- Professor Doutor Paulo Miguel Ciríaco Pinheiro Pombinho de Matos
+
+**Ano letivo:** 2025/2026
+
+Trabalho académico, desenvolvido para fins de avaliação.

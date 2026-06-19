@@ -1,24 +1,16 @@
-"""
-ETL - Etapa 1: Extracao.
-
-Le os ficheiros de origem da plataforma Lisboa Aberta:
-- historico GIRA (2 ficheiros CSV, concatenados);
-- estacoes de metro e rede ciclavel (GeoJSON).
-
-Valida a presenca dos campos essenciais em cada dataset antes de prosseguir.
-"""
+"""Extracao dos ficheiros de origem (CSV do historico GIRA, GeoJSON de metro e
+rede ciclavel), com validacao de colunas essenciais antes de prosseguir."""
 
 import geopandas as gpd
 import pandas as pd
 
 import config
 
-# Colunas esperadas em cada fonte (validacao de integridade estrutural).
 COLUNAS_GIRA = ["desigcomercial", "numbicicletas", "numdocas",
                 "position", "entity_ts", "estado"]
 COLUNAS_METRO = ["OBJECTID", "NOME", "LINHA", "SITUACAO", "geometry"]
 # Inclui HIERARQUIA e COMP_KM porque sao consumidas no carregamento (load.py);
-# validar a presenca aqui evita uma falha tardia na Etapa 5.
+# validar aqui evita falha tardia na persistencia.
 COLUNAS_CICLAVEL = ["OBJECTID", "DESIGNACAO", "TIPOLOGIA", "NIVEL_SEGREGACAO",
                     "SITUACAO", "HIERARQUIA", "COMPRIMENTO", "COMP_KM",
                     "FREGUESIA", "geometry"]
@@ -34,10 +26,7 @@ def _validar_colunas(df, esperadas, nome):
 
 
 def extrair_historico_gira(ficheiros=None):
-    """Le e concatena os ficheiros CSV do historico GIRA.
-
-    Retorna um DataFrame unico com os dois semestres de 2022.
-    """
+    """Le e concatena os ficheiros CSV do historico GIRA num unico DataFrame."""
     ficheiros = ficheiros or config.FICHEIROS_GIRA
     partes = []
     for caminho in ficheiros:

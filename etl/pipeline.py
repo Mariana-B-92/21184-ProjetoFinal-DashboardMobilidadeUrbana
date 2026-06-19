@@ -1,12 +1,5 @@
-"""
-Orquestrador do pipeline de ETL.
-
-Cobre as Etapas 1-4: 1 (Extracao), 2 (Limpeza), 3 (Integracao espacial) e
-4 (Variaveis derivadas). A Etapa 5 (Carregamento) e deliberadamente externa a
-este modulo: corre em etl/load.py, orquestrada por construir_modelo.py, DEPOIS
-do calculo dos indicadores (kpis/) sobre as agregacoes devolvidas aqui. Esta
-separacao mantem o pipeline focado na transformacao e a persistencia isolada.
-"""
+"""Orquestra a transformacao de dados: extracao, limpeza, integracao espacial e
+variaveis derivadas. O carregamento em SQLite fica a parte (etl/load.py)."""
 
 import json
 import warnings
@@ -16,7 +9,7 @@ from etl import clean, derive, extract, spatial
 
 
 def correr_etl():
-    """Corre as Etapas 1-4 e devolve os artefactos processados + qualidade.
+    """Corre o pipeline e devolve os artefactos processados + qualidade.
 
     Retorna um dicionario com:
       historico_limpo, estacoes_gira, metro_limpo, ciclavel_limpo,
@@ -24,12 +17,12 @@ def correr_etl():
     """
     qualidade = {}
 
-    # Etapa 1 - Extracao
+    # Extracao
     historico = extract.extrair_historico_gira()
     metro = extract.extrair_metro()
     ciclavel = extract.extrair_ciclavel()
 
-    # Etapa 2 - Limpeza e normalizacao
+    # Limpeza e normalizacao
     historico_limpo, q_gira = clean.limpar_historico_gira(historico)
     metro_limpo, q_metro = clean.limpar_metro(metro)
     ciclavel_limpo, q_ciclavel = clean.limpar_ciclavel(ciclavel)
@@ -37,7 +30,7 @@ def correr_etl():
     qualidade["estacoes_metro"] = q_metro
     qualidade["rede_ciclavel"] = q_ciclavel
 
-    # Etapa 3 - Integracao espacial
+    # Integracao espacial
     estacoes_gira = spatial.construir_estacoes_gira(historico_limpo)
     cobertura, pertenca = spatial.integracao_espacial(
         estacoes_gira, metro_limpo, ciclavel_limpo)
@@ -51,7 +44,7 @@ def correr_etl():
             float(cobertura["comp_ciclavel_m"].sum()), 2),
     }
 
-    # Etapa 4 - Variaveis derivadas
+    # Variaveis derivadas
     agg_estacao, agg_estacao_hora, q_derive = derive.calcular_variaveis_derivadas(
         historico_limpo, estacoes_gira)
     qualidade["variaveis_derivadas"] = q_derive
@@ -74,9 +67,8 @@ def correr_etl():
 
 
 if __name__ == "__main__":
-    # Silencia o ruido cosmetico de avisos do pandas/geopandas/shapely nesta
-    # execucao offline (ver nota igual em construir_modelo.py). Deliberado e
-    # limitado a este script: NAO afeta o runtime do dashboard.
+    # Silencia avisos cosmeticos do pandas/geopandas nesta execucao offline; nao
+    # afeta o runtime do dashboard.
     warnings.filterwarnings("ignore")
     resultado = correr_etl()
     print(json.dumps(resultado["qualidade"], ensure_ascii=False, indent=2))

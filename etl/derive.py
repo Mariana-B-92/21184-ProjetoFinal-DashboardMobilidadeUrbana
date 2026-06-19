@@ -1,17 +1,5 @@
-"""
-ETL - Etapa 4: Calculo de variaveis derivadas.
-
-Calcula as variaveis que alimentam diretamente os indicadores do Grupo 1:
-- taxa de ocupacao instantanea por observacao: b_i(t) / D_i, onde D_i e a
-  capacidade (total de docas) da estacao. Limitada a [0, 1] quando configurado,
-  garantindo que a taxa media de disponibilidade fica em [0, 1] "por construcao";
-- agregacoes temporais de disponibilidade: media por estacao e media por
-  (estacao, hora do dia).
-
-Estas agregacoes sao consumidas pelo modulo kpis/grupo1.py, que materializa os
-indicadores. A separacao mantem o ETL responsavel pelas agregacoes e o modulo de
-KPIs responsavel pela formula de cada indicador.
-"""
+"""Calculo de variaveis derivadas: taxa de ocupacao instantanea por observacao
+e agregacoes temporais de disponibilidade (por estacao e por estacao x hora)."""
 
 import config
 
@@ -22,7 +10,7 @@ def calcular_variaveis_derivadas(historico_limpo, estacoes_gira):
     Retorna (agg_estacao, agg_estacao_hora, qualidade):
     - agg_estacao: por id_estacao -> media_bicicletas, media_taxa_ocupacao, n_obs;
     - agg_estacao_hora: por (id_estacao, hora) -> media_bicicletas, n_obs;
-    - qualidade: estatisticas para o relatorio (clamps, cobertura horaria).
+    - qualidade: estatisticas (clamps aplicados, cobertura horaria).
     """
     q = {}
     df = historico_limpo.copy()
@@ -46,7 +34,7 @@ def calcular_variaveis_derivadas(historico_limpo, estacoes_gira):
         n_obs=("numbicicletas", "size"),
     )
 
-    # Agregacao por estacao x hora do dia (base do IVD e da hora de pico).
+    # Agregacao por estacao x hora do dia.
     agg_estacao_hora = df.groupby(["id_estacao", "hora"]).agg(
         media_bicicletas=("numbicicletas", "mean"),
         n_obs=("numbicicletas", "size"),

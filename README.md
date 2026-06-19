@@ -80,7 +80,6 @@ Dashboard-MobilidadeUrbana-ProjetoFinal-LEI/
 ├── construir_modelo.py    # Orquestrador da fase offline (ETL + KPIs + carregamento)
 ├── iniciar_dashboard.py   # Lançador simples (arranca o servidor e abre o navegador)
 ├── iniciar_dashboard.bat  # Atalho de duplo-clique para o lançador (Windows)
-├── sincronizar_deploy.ps1 # Sincroniza a app com o clone de deploy do HuggingFace
 ├── requirements.txt
 ├── pytest.ini
 ├── mypy.ini
@@ -111,11 +110,8 @@ Dashboard-MobilidadeUrbana-ProjetoFinal-LEI/
 │
 ├── tests/                 # Testes (unitários, sistema, desempenho, escalabilidade)
 ├── scripts/               # Utilitários (extração dos dados de origem)
-├── reports/               # Relatório de qualidade dos dados
-│
-└── deploy-huggingface/   # Clone de deploy do HuggingFace Space
-                          #   (subconjunto da app + modelo + Dockerfile;
-                          #   repositório git autónomo)
+└── reports/               # Relatório de qualidade dos dados
+ 
 ```
 
 ## Instalação

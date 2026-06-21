@@ -1,253 +1,27 @@
-# Dashboard de Análise de Mobilidade Urbana — Lisboa
+---
+title: Intermodalidade Bicicleta-Metro Lisboa
+emoji: 🚲
+colorFrom: blue
+colorTo: green
+sdk: docker
+app_port: 7860
+pinned: false
+---
 
-Protótipo de uma aplicação web interativa para análise da articulação entre o
-sistema de bicicletas partilhadas **GIRA**, a **rede ciclável** e a rede de
-**metro** do município de Lisboa, a partir de dados abertos da plataforma
-[Lisboa Aberta](https://lisboaaberta.cm-lisboa.pt/).
+# Dashboard de Intermodalidade Bicicleta–Metro — Lisboa
 
-O projeto transforma dados de mobilidade dispersos num modelo integrado e num
-conjunto de indicadores que permitem caracterizar a disponibilidade do sistema
-GIRA e avaliar o potencial de intermodalidade bicicleta–metro, apresentando os
-resultados num *dashboard* cartográfico.
+Aplicação web interativa (Dash) para análise da articulação entre o sistema de
+bicicletas partilhadas **GIRA**, a **rede ciclável** e o **metro** de Lisboa, a
+partir de dados abertos da plataforma Lisboa Aberta. Protótipo desenvolvido no
+âmbito do Projeto de Engenharia Informática da Universidade Aberta.
 
-> **▶ Ver dashboard online:** https://mariana-b-92-dashboard-mobilidadeurbana-lisboa.hf.space
->
-> Forma recomendada de consultar o *dashboard* — sem qualquer instalação.
-> Em alternativa, pode correr-se localmente (ver [Utilização](#utilização)).
+## Execução
 
-## Índice
+A aplicação corre via **Docker** e é servida por **gunicorn** na porta `7860`,
+expondo o objeto Flask `server` definido em `app/app.py`. O modelo de dados
+integrado (`data/processed/mobilidade.db`, ~230 MB) é versionado com **git-LFS**
+e lido em modo só-leitura: as tabelas pequenas são carregadas em memória no
+arranque e o histórico de disponibilidade (~1,99 M de registos) é consultado a
+pedido a partir do SQLite.
 
-- [Visão geral](#visão-geral)
-- [Arquitetura](#arquitetura)
-- [Indicadores](#indicadores)
-- [Estrutura do projeto](#estrutura-do-projeto)
-- [Instalação](#instalação)
-- [Utilização](#utilização)
-- [Testes](#testes)
-- [Publicação (Hugging Face Spaces)](#publicação-hugging-face-spaces)
-- [Configuração](#configuração)
-- [Fontes de dados](#fontes-de-dados)
-- [Autoria](#autoria)
-
-## Visão geral
-
-O sistema está organizado em duas fases. Uma fase de **pré-processamento**
-(*offline*), que lê os dados de origem, limpa-os, integra-os no espaço, calcula
-os indicadores e persiste tudo numa base de dados local. E uma fase de
-**apresentação**, em que o *dashboard* consome o modelo já processado e oferece
-exploração interativa através de um mapa e de visualizações complementares.
-
-Esta separação garante que a interface permanece fluida, uma vez que o
-processamento pesado (na ordem dos milhões de registos do histórico GIRA) ocorre
-uma única vez, antes do arranque da aplicação.
-
-## Arquitetura
-
-O projeto segue uma arquitetura em três camadas:
-
-| Camada | Componentes | Responsabilidade |
-|--------|-------------|------------------|
-| **Dados** | `data/` | Ficheiros de origem e modelo integrado (SQLite, geometrias em WKT) |
-| **Processamento** | `etl/`, `kpis/` | Pipeline de ETL em cinco etapas e cálculo dos indicadores |
-| **Apresentação** | `app/` | Dashboard interativo (mapa, séries, comparações) |
-
-O pipeline de ETL desenvolve-se em cinco etapas encadeadas: **extração** dos
-ficheiros de origem, **limpeza** e normalização, **integração espacial**
-(reprojeção, áreas de influência e medidas de distância), cálculo de
-**variáveis derivadas** e **carregamento** do modelo integrado. No final, é
-gerado um relatório de qualidade dos dados.
-
-## Indicadores
-
-Os indicadores estão organizados em dois grupos.
-
-O **Grupo 1 — Disponibilidade GIRA** caracteriza cada estação de bicicletas:
-disponibilidade média, taxa média de disponibilidade, índice de variabilidade
-diária e hora de pico (a hora de menor disponibilidade).
-
-O **Grupo 2 — Cobertura de Infraestrutura** caracteriza cada estação de metro
-quanto à sua articulação com a bicicleta: distância à estação GIRA mais próxima,
-número de estações GIRA na área de influência, comprimento de rede ciclável na
-área de influência e disponibilidade nas horas de pico. Estes integram-se num
-**Índice de Intermodalidade Composto (IIC)**, que combina proximidade, densidade
-de estações e conectividade ciclável num valor sintético entre 0 e 1.
-
-## Estrutura do projeto
-
-```
-Dashboard-MobilidadeUrbana-ProjetoFinal-LEI/
-├── config.py              # Parâmetros externalizados (raios, pesos, CRS, filtros, paleta)
-├── construir_modelo.py    # Orquestrador da fase offline (ETL + KPIs + carregamento)
-├── iniciar_dashboard.py   # Lançador simples (arranca o servidor e abre o navegador)
-├── iniciar_dashboard.bat  # Atalho de duplo-clique para o lançador (Windows)
-├── requirements.txt
-├── pytest.ini
-├── mypy.ini
-│
-├── data/
-│   ├── raw/               # Ficheiros de origem (.7z, .csv, .geojson)
-│   └── processed/         # Base de dados gerada (mobilidade.db)
-│
-├── etl/                   # Pipeline de ETL
-│   ├── extract.py         #   1. Extração
-│   ├── clean.py           #   2. Limpeza e normalização
-│   ├── spatial.py         #   3. Integração espacial
-│   ├── derive.py          #   4. Variáveis derivadas
-│   ├── load.py            #   5. Carregamento (SQLite, WKT)
-│   └── pipeline.py        #   Orquestrador das etapas
-│
-├── kpis/                  # Cálculo dos indicadores
-│   ├── grupo1.py          #   Disponibilidade GIRA
-│   ├── grupo2.py          #   Cobertura de infraestrutura
-│   └── iic.py             #   Índice de Intermodalidade Composto
-│
-├── app/                   # Dashboard
-│   ├── app.py             #   Aplicação e layout
-│   ├── data.py            #   Camada de acesso a dados
-│   ├── callbacks.py       #   Interatividade
-│   ├── figures.py         #   Visualizações
-│   └── assets/            #   Estilos e recursos
-│
-├── tests/                 # Testes (unitários, sistema, desempenho, escalabilidade)
-├── scripts/               # Utilitários (extração dos dados de origem)
-└── reports/               # Relatório de qualidade dos dados
- 
-```
-
-## Instalação
-
-Requer **Python 3.10+**. Recomenda-se a utilização de um ambiente virtual.
-
-```bash
-python -m venv .venv
-source .venv/bin/activate          # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
-```
-
-## Utilização
-
-**1. Preparar os dados de origem.** Colocar os ficheiros de origem em
-`data/raw/` e extrair os históricos GIRA:
-
-```bash
-python scripts/preparar_dados.py
-```
-
-**2. Construir o modelo integrado.** Corre o pipeline completo (ETL e
-indicadores) e persiste o resultado em `data/processed/mobilidade.db`:
-
-```bash
-python construir_modelo.py
-```
-
-Esta etapa só precisa de ser executada uma vez (ou sempre que os dados de origem
-ou os parâmetros mudem). Inclui ainda a pré-agregação da série diária global,
-para a vista inicial do *dashboard* abrir instantaneamente.
-
-**3. Arrancar o dashboard.** A versão publicada está disponível online, sem
-instalação, em
-https://mariana-b-92-dashboard-mobilidadeurbana-lisboa.hf.space (forma
-recomendada).
-
-Para correr **localmente** — útil como alternativa offline ou para
-desenvolvimento — basta o duplo-clique em `iniciar_dashboard.bat` (Windows)
-ou, em qualquer sistema:
-
-```bash
-python iniciar_dashboard.py
-```
-
-O servidor arranca e o navegador abre automaticamente em
-`http://127.0.0.1:8050`. Para desenvolvimento (com recarregamento automático e
-avisos), pode usar-se o modo *debug*:
-
-```bash
-python -m app.app
-```
-
-Em qualquer dos casos, a aplicação fica disponível em `http://127.0.0.1:8050`.
-
-## Testes
-
-A suite de testes cobre os indicadores, o pipeline, a camada de apresentação,
-a integração, o desempenho e a escalabilidade do sistema:
-
-```bash
-pytest                                 # toda a suite
-pytest -s tests/test_desempenho.py     # com os tempos medidos
-```
-
-Ver `tests/README.md` para a descrição de cada conjunto de testes.
-
-## Publicação (Hugging Face Spaces)
-
-O *dashboard* está publicado num Hugging Face Space, cujo clone vive em
-`deploy-huggingface/` (repositório git autónomo, ligado ao
-remote do HuggingFace). Esse clone contém apenas o necessário para correr em
-produção: a app, o `config.py`, o modelo já construído (`mobilidade.db`), o
-`Dockerfile` e um `requirements.txt` com o servidor de produção (`gunicorn`).
-
-Como o código vive em dois sítios, há um script que propaga as alterações da
-app principal para o clone de deploy — copiando só o que é partilhado (`app/`,
-`config.py`, `mobilidade.db`) e preservando os ficheiros específicos de
-produção (`Dockerfile`, `requirements.txt`, `README.md` do Space):
-
-```powershell
-# Pre-visualizar o que mudaria (nao envia nada):
-.\sincronizar_deploy.ps1
-
-# Copiar, fazer commit e push para o Hugging Face:
-.\sincronizar_deploy.ps1 -Push -Mensagem "descricao da alteracao"
-```
-
-Fluxo típico após alterar o código ou reconstruir o modelo:
-
-1. (Se os dados/parâmetros mudaram) `python construir_modelo.py`;
-2. `.\sincronizar_deploy.ps1 -Push -Mensagem "..."`;
-3. O Hugging Face reconstrói a imagem Docker e republica automaticamente.
-
-> **Nota — JavaScript do mapa.** As funções dos marcadores (definidas com
-> `assign()` em `app/app.py`) correm a partir do ficheiro **gerado**
-> `app/assets/dashExtensions_default.js`, que não se regenera automaticamente. Ao
-> alterar essa lógica JavaScript, é preciso atualizar também esse ficheiro antes
-> de sincronizar; caso contrário, o Space mantém o comportamento anterior.
-
-## Configuração
-
-Os parâmetros do sistema estão centralizados em `config.py` e podem ser
-ajustados sem alterar o código: raio das áreas de influência, truncatura de
-distância, pesos do IIC, sistemas de coordenadas, critérios de filtragem dos
-dados e a paleta de cores usada de forma coerente no mapa, nas legendas e nos
-gráficos. Esta externalização facilita a análise de sensibilidade e a adaptação
-a outros contextos.
-
-## Fontes de dados
-
-Todos os dados provêm da plataforma Lisboa Aberta:
-
-- **Histórico GIRA** — registos de disponibilidade das estações de bicicletas;
-- **Rede ciclável** — geometria das ciclovias do município;
-- **Estações de metro** — localização das estações da rede de metropolitano.
-
-A qualidade e a cobertura dos dados abertos não são controladas pela equipa; as
-limitações identificadas durante o processamento são registadas no relatório de
-qualidade gerado pelo pipeline.
-
-## Autoria
-
-Protótipo de *dashboard* para análise de dados de mobilidade urbana, desenvolvido
-no âmbito da unidade curricular de **Projeto de Engenharia Informática**, da
-Licenciatura em Engenharia Informática da **Universidade Aberta**.
-
-**Autoras**
-
-- Ana Filipa Ramos de Oliveira — 2200079
-- Mariana Cavaco Barrote — 2200640
-
-**Orientador**
-
-- Professor Doutor Paulo Miguel Ciríaco Pinheiro Pombinho de Matos
-
-**Ano letivo:** 2025/2026
-
-Trabalho académico, desenvolvido para fins de avaliação.
+> O cabeçalho YAML acima configura o Space (SDK Docker, porta 7860). Não remover.

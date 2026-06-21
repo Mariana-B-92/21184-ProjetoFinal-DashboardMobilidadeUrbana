@@ -1,11 +1,12 @@
-# Dependencias principais do projeto.
-# Instalacao: pip install -r requirements.txt
+# Dependencias de EXECUCAO do dashboard (deploy no Hugging Face Spaces).
+# Nao inclui ferramentas so necessarias na fase offline/local (py7zr, pytest):
+# o modelo (mobilidade.db) ja vai construido no repositorio, via git-LFS.
 
 # --- Processamento de dados ---
 pandas>=2.2
 numpy>=1.26
 
-# --- Dados geoespaciais ---
+# --- Dados geoespaciais (operacoes em memoria no runtime: WKT, to_crs, buffer) ---
 geopandas>=1.0
 shapely>=2.0
 pyproj>=3.6
@@ -14,9 +15,7 @@ pyproj>=3.6
 dash>=2.17
 plotly>=5.22
 dash-leaflet>=1.0
+dash-extensions>=1.0      # usado em app/app.py (dash_extensions.javascript.assign)
 
-# --- Auxiliares ---
-py7zr>=0.21        # extracao dos historicos GIRA (.7z)
-
-# --- Desenvolvimento / testes ---
-pytest>=8.0        # testes unitarios, de sistema, desempenho e escalabilidade
+# --- Servidor de producao ---
+gunicorn>=21.2
